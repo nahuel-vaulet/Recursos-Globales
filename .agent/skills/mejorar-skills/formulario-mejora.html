@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mejorar Skills - Recursos Globales</title>
+    <style>
+        :root {
+            --color-primary-dark: #004A7F;
+            --color-primary: #0073A8;
+            --color-primary-light: #009FD7;
+            --color-neutral-dark: #333333;
+            --color-neutral: #666666;
+            --color-neutral-light: #AAAAAA;
+            --color-success: #28A745;
+            --color-warning: #FFC107;
+            --color-background: #F5F5F5;
+            --color-surface: #FFFFFF;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.15);
+            --border-radius-md: 8px;
+            --border-radius-lg: 16px;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--color-background) 0%, #e0e8ed 100%);
+            min-height: 100vh;
+            padding: var(--spacing-lg);
+            color: var(--color-neutral-dark);
+        }
+
+        .container { max-width: 900px; margin: 0 auto; }
+
+        header {
+            text-align: center;
+            padding: var(--spacing-lg);
+            background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary), var(--color-primary-light));
+            border-radius: var(--border-radius-lg);
+            color: white;
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-md);
+        }
+
+        .logo-img {
+            max-width: 180px;
+            height: auto;
+            margin-bottom: var(--spacing-sm);
+            filter: brightness(0) invert(1);
+        }
+
+        header h1 { font-size: 1.75rem; margin-bottom: 4px; }
+        header p { opacity: 0.9; }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+            background: var(--color-surface);
+            padding: var(--spacing-sm);
+            border-radius: var(--border-radius-md);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .tab {
+            flex: 1;
+            padding: var(--spacing-md);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: var(--border-radius-md);
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+        }
+
+        .tab:hover { background: var(--color-background); }
+        .tab.active { background: var(--color-primary); color: white; }
+
+        /* Panels */
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        /* Skill Selector */
+        .skill-selector {
+            background: var(--color-surface);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius-md);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid var(--color-primary);
+        }
+
+        .skill-selector label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: var(--spacing-sm);
+            color: var(--color-primary-dark);
+        }
+
+        .skill-selector select {
+            width: 100%;
+            padding: var(--spacing-md);
+            border: 2px solid var(--color-neutral-light);
+            border-radius: var(--border-radius-md);
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .skill-selector select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        /* Question Card */
+        .question-card {
+            background: var(--color-surface);
+            border-radius: var(--border-radius-md);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-md);
+            box-shadow: var(--shadow-sm);
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .question-card.answered { border-color: var(--color-success); }
+        .question-card.new { border-color: var(--color-warning); }
+
+        .question-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .badge-new { background: var(--color-warning); color: #000; }
+        .badge-previous { background: var(--color-success); color: white; }
+
+        .question-header {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .question-number {
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+            color: white;
+            min-width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .question-title { font-weight: 600; font-size: 1.05rem; }
+        .question-hint { font-size: 0.85rem; color: var(--color-neutral); margin-top: 4px; }
+
+        .options { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+
+        .option {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md);
+            background: var(--color-background);
+            border-radius: var(--border-radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .option:hover { border-color: var(--color-primary-light); }
+        .option.selected { background: rgba(0, 115, 168, 0.12); border-color: var(--color-primary); }
+
+        .option input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: var(--spacing-md);
+            accent-color: var(--color-primary);
+        }
+
+        .option-letter {
+            background: var(--color-primary);
+            color: white;
+            min-width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.8rem;
+            margin-right: var(--spacing-md);
+        }
+
+        .other-input {
+            margin-top: var(--spacing-sm);
+            padding: var(--spacing-md);
+            width: 100%;
+            border: 2px solid var(--color-neutral-light);
+            border-radius: var(--border-radius-md);
+            display: none;
+        }
+
+        .other-input.visible { display: block; }
+        .other-input:focus { outline: none; border-color: var(--color-primary); }
+
+        .comment-input {
+            width: 100%;
+            margin-top: var(--spacing-md);
+            padding: var(--spacing-md);
+            border: 1px solid var(--color-neutral-light);
+            border-radius: var(--border-radius-md);
+            font-family: inherit;
+            font-size: 0.9rem;
+            min-height: 80px;
+            resize: vertical;
+            background: #fafafa;
+        }
+
+        .comment-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            background: white;
+            box-shadow: 0 0 0 2px rgba(0, 115, 168, 0.1);
+        }
+
+        /* History Panel */
+        .history-card {
+            background: var(--color-surface);
+            border-radius: var(--border-radius-md);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-md);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--color-neutral-light);
+        }
+
+        .history-skill { font-weight: 700; color: var(--color-primary-dark); }
+        .history-date { font-size: 0.85rem; color: var(--color-neutral); }
+
+        .history-answers { font-size: 0.9rem; }
+        .history-answers p { margin-bottom: var(--spacing-sm); }
+
+        .history-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-md);
+        }
+
+        .btn-small {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: none;
+            border-radius: var(--border-radius-md);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-edit { background: var(--color-primary-light); color: white; }
+        .btn-delete { background: #dc3545; color: white; }
+
+        .empty-state {
+            text-align: center;
+            padding: var(--spacing-lg) * 2;
+            color: var(--color-neutral);
+        }
+
+        /* Action Button */
+        .btn-action {
+            width: 100%;
+            padding: var(--spacing-lg);
+            border: none;
+            border-radius: var(--border-radius-md);
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-md);
+            box-shadow: var(--shadow-md);
+            transition: all 0.2s;
+            margin-top: var(--spacing-lg);
+        }
+
+        .btn-action:hover { transform: translateY(-2px); }
+        .btn-action.success { background: linear-gradient(135deg, var(--color-success), #1e7e34); }
+
+        .btn-reset {
+            margin-top: var(--spacing-md);
+            padding: var(--spacing-md);
+            border: 2px solid var(--color-neutral-light);
+            border-radius: var(--border-radius-md);
+            background: var(--color-surface);
+            color: var(--color-neutral);
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn-reset:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+        #output {
+            margin-top: var(--spacing-lg);
+            padding: var(--spacing-lg);
+            background: var(--color-neutral-dark);
+            color: #4ade80;
+            border-radius: var(--border-radius-md);
+            font-family: monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            display: none;
+        }
+
+        #output.visible { display: block; }
+
+        .toast {
+            position: fixed;
+            bottom: var(--spacing-lg);
+            right: var(--spacing-lg);
+            background: var(--color-success);
+            color: white;
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-radius: var(--border-radius-md);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.visible { opacity: 1; transform: translateY(0); }
+
+        footer {
+            text-align: center;
+            margin-top: var(--spacing-lg);
+            color: var(--color-neutral);
+            font-size: 0.85rem;
+        }
+
+        /* Progress indicator */
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            padding: var(--spacing-md);
+            background: var(--color-surface);
+            border-radius: var(--border-radius-md);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .progress-stat { text-align: center; }
+        .progress-stat .number { font-size: 1.5rem; font-weight: 700; color: var(--color-primary); }
+        .progress-stat .label { font-size: 0.8rem; color: var(--color-neutral); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="./recursos/RG_Logo.png" alt="Recursos Globales" class="logo-img" onerror="this.style.display='none'">
+            <h1>Mejorar Skills</h1>
+            <p>Sistema de preguntas dinámicas · v8.0</p>
+        </header>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('new')">
+                📝 Nueva Mejora
+            </button>
+            <button class="tab" onclick="switchTab('history')">
+                📜 Historial
+            </button>
+        </div>
+
+        <!-- New Improvement Panel -->
+        <div class="panel active" id="panel-new">
+            <div class="skill-selector">
+                <label>📁 Skill a mejorar:</label>
+                <select id="skillSelect" onchange="loadSkillContext()">
+                    <option value="">-- Selecciona --</option>
+                    <option value="brainstorming-pro">brainstorming-pro</option>
+                    <option value="creador-de-skills">creador-de-skills</option>
+                    <option value="estilo-marca">estilo-marca</option>
+                    <option value="mejorar-skills">mejorar-skills</option>
+                    <option value="modo-produccion">modo-produccion</option>
+                    <option value="planificacion-pro">planificacion-pro</option>
+                </select>
+            </div>
+
+            <div class="progress-info" id="progressInfo" style="display: none;">
+                <div class="progress-stat">
+                    <div class="number" id="statPrevious">0</div>
+                    <div class="label">Preguntas previas</div>
+                </div>
+                <div class="progress-stat">
+                    <div class="number" id="statNew">0</div>
+                    <div class="label">Nuevas preguntas</div>
+                </div>
+                <div class="progress-stat">
+                    <div class="number" id="statTotal">0</div>
+                    <div class="label">Mejoras totales</div>
+                </div>
+            </div>
+
+            <div id="questionsContainer"></div>
+
+            <button class="btn-action" id="mainButton" onclick="generateAndCopy()" style="display: none;">
+                📋 Generar y Copiar
+            </button>
+            <button class="btn-reset" onclick="resetForm()" style="display: none;" id="resetButton">
+                🔄 Limpiar
+            </button>
+
+            <pre id="output"></pre>
+        </div>
+
+        <!-- History Panel -->
+        <div class="panel" id="panel-history">
+            <div id="historyContainer"></div>
+        </div>
+
+        <footer>
+            Recursos Globales Business Company · v8.0
+        </footer>
+    </div>
+
+    <div class="toast" id="toast">✅ Copiado al portapapeles</div>
+
+    <script>
+        // Question bank - organized by category to avoid repetition
+        const questionBank = {
+            documentation: [
+                { id: 'doc1', q: '¿Cumple con la estructura oficial (Inputs/Output/Workflow)?', opts: ['Sí, completo', 'Falta Workflow', 'Falta Tabla Inputs', 'Estructura incorrecta'] },
+                { id: 'doc2', q: '¿Los triggers están claramente definidos?', opts: ['Sí', 'Son ambiguos', 'Faltan ejemplos', 'No tiene triggers'] },
+                { id: 'doc3', q: '¿Incluye ejemplos de uso concretos?', opts: ['Sí, varios', 'Solo uno', 'Ninguno', 'Ejemplos confusos'] },
+            ],
+            satisfaction: [
+                { id: 'sat1', q: '¿Nivel de satisfacción general?', opts: ['1-2 No sirve', '3 Mejorable', '4 Bueno', '5 Excelente'] },
+                { id: 'sat2', q: '¿Cómo calificarías la velocidad del skill?', opts: ['Lento', 'Normal', 'Rápido', 'Instantáneo'] },
+                { id: 'sat3', q: '¿La calidad del output ha mejorado?', opts: ['Ha empeorado', 'Igual', 'Mejoró un poco', 'Mejoró mucho'] },
+            ],
+            areas: [
+                { id: 'area1', q: '¿Qué área necesita más atención?', opts: ['Triggers', 'Inputs', 'Workflow', 'Output', 'Reglas'], multi: true },
+                { id: 'area2', q: '¿El workflow actual es eficiente?', opts: ['Sí', 'Tiene pasos innecesarios', 'Falta estructura', 'Muy largo'] },
+                { id: 'area3', q: '¿Los triggers se activan correctamente?', opts: ['Siempre', 'A veces', 'Raramente', 'Nunca'] },
+                { id: 'area4', q: '¿Los inputs pedidos son razonables?', opts: ['Sí', 'Pide demasiados', 'Faltan datos clave', 'Confusos'] },
+            ],
+            problems: [
+                { id: 'prob1', q: '¿El output es útil y específico?', opts: ['Sí', 'Muy genérico', 'Incompleto', 'Formato inadecuado'] },
+                { id: 'prob2', q: '¿La documentación es clara?', opts: ['Sí', 'Falta contexto', 'Faltan ejemplos', 'Muy técnica'] },
+                { id: 'prob3', q: '¿Se coordina bien con otros skills?', opts: ['Sí', 'No aplica', 'Debería coordinarse', 'Hay conflictos'] },
+                { id: 'prob4', q: '¿Cómo maneja los errores?', opts: ['Bien', 'Se rompe fácil', 'Mensajes confusos', 'Ignora errores'] },
+                { id: 'prob5', q: '¿Cubre los casos borde?', opts: ['Sí', 'Falla en casos raros', 'Solo camino feliz', 'No sé'] },
+            ],
+            improvements: [
+                { id: 'imp1', q: '¿Qué debería añadirse?', opts: ['Más ejemplos', 'Más opciones', 'Mejor formato', 'Más triggers', 'Imágenes/visual'], multi: true },
+                { id: 'imp2', q: '¿Qué debería simplificarse?', opts: ['Número de pasos', 'Inputs pedidos', 'Formato output', 'Nada'], multi: true },
+                { id: 'imp3', q: '¿Qué nivel de automatización?', opts: ['Proponer opciones', 'Ejecutar directo', 'Preguntar si ambiguo', 'Auto-detectar'] },
+                { id: 'imp4', q: '¿Necesita validaciones extra?', opts: ['No', 'Validar inputs', 'Validar entorno', 'Validar output final'] },
+            ],
+            advanced: [
+                { id: 'adv1', q: '¿El skill debería recordar preferencias?', opts: ['Sí', 'No', 'Solo algunas'] },
+                { id: 'adv2', q: '¿Debería sugerir skills relacionados?', opts: ['Sí, al final', 'Sí, durante proceso', 'No'] },
+                { id: 'adv3', q: '¿Cómo mostrar cambios aplicados?', opts: ['Solo confirmación', 'Lista de cambios', 'Antes vs después'] },
+                { id: 'adv4', q: '¿Debe generar archivos extra?', opts: ['No', 'Logs', 'Reportes', 'Backups'] },
+            ],
+            action: [
+                { id: 'act1', q: '¿Aplicar los cambios?', opts: ['✅ Aplicar ahora', 'Revisar antes', 'Más preguntas', 'Descartar'] },
+            ]
+        };
+
+        let currentQuestions = [];
+        let skillHistory = {};
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAllHistory();
+            renderHistory();
+        });
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            
+            document.querySelector(`.tab:nth-child(${tab === 'new' ? 1 : 2})`).classList.add('active');
+            document.getElementById(`panel-${tab}`).classList.add('active');
+            
+            if (tab === 'history') renderHistory();
+        }
+
+        function loadAllHistory() {
+            skillHistory = JSON.parse(localStorage.getItem('skillHistory') || '{}');
+        }
+
+        function loadSkillContext() {
+            const skill = document.getElementById('skillSelect').value;
+            if (!skill) {
+                document.getElementById('questionsContainer').innerHTML = '';
+                document.getElementById('mainButton').style.display = 'none';
+                document.getElementById('resetButton').style.display = 'none';
+                document.getElementById('progressInfo').style.display = 'none';
+                return;
+            }
+
+            loadAllHistory();
+            const history = skillHistory[skill] || { answered: [], improvements: 0 };
+            
+            // Select questions that haven't been answered recently
+            currentQuestions = selectDynamicQuestions(history.answered);
+            
+            // Update stats
+            document.getElementById('progressInfo').style.display = 'flex';
+            document.getElementById('statPrevious').textContent = history.answered.length;
+            document.getElementById('statNew').textContent = currentQuestions.filter(q => !history.answered.includes(q.id)).length;
+            document.getElementById('statTotal').textContent = history.improvements;
+            
+            renderQuestions();
+            
+            document.getElementById('mainButton').style.display = 'flex';
+            document.getElementById('resetButton').style.display = 'block';
+        }
+
+        function selectDynamicQuestions(answeredIds) {
+            const selected = [];
+            const categories = Object.keys(questionBank);
+            
+            // 1. Documentation Check (Priority)
+            // Only add if NOT answered yet
+            if (!answeredIds.includes('doc1')) {
+                selected.push(questionBank.documentation[0]);
+            }
+
+            // 2. Iterate ALL categories (including satisfaction) to pick new questions
+            categories.forEach(cat => {
+                // Skip 'action' (added at end) and 'documentation' (handled above)
+                if (cat === 'action' || cat === 'documentation') return;
+                
+                // Find questions in this category that are NOT in answeredIds
+                const available = questionBank[cat].filter(q => !answeredIds.includes(q.id));
+                
+                if (available.length > 0) {
+                    // Pick the first available one (rotation)
+                    selected.push(available[0]);
+                }
+            });
+            
+            // Always add the action question at the VERY END
+            selected.push(questionBank.action[0]);
+            
+            return selected;
+        }
+
+        function renderQuestions() {
+            const container = document.getElementById('questionsContainer');
+            const skill = document.getElementById('skillSelect').value;
+            const history = skillHistory[skill] || { answered: [] };
+            
+            let html = currentQuestions.map((q, idx) => {
+                const isNew = !history.answered.includes(q.id);
+                const badgeClass = isNew ? 'badge-new' : 'badge-previous';
+                const badgeText = isNew ? '🆕 Nueva' : '📝 Anterior';
+                const cardClass = isNew ? 'new' : '';
+                
+                return `
+                    <div class="question-card ${cardClass}" data-qid="${q.id}">
+                        <span class="question-badge ${badgeClass}">${badgeText}</span>
+                        <div class="question-header">
+                            <span class="question-number">${idx + 1}</span>
+                            <div>
+                                <div class="question-title">${q.q}</div>
+                                ${q.multi ? '<div class="question-hint">Puedes seleccionar varias</div>' : ''}
+                            </div>
+                        </div>
+                        <div class="options">
+                            ${q.opts.map((opt, oidx) => `
+                                <div class="option" onclick="toggleOption(this, '${q.id}', ${q.multi || false})">
+                                    <input type="checkbox" name="${q.id}" value="${String.fromCharCode(65 + oidx)}">
+                                    <span class="option-letter">${String.fromCharCode(65 + oidx)}</span>
+                                    <label>${opt}</label>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <textarea class="comment-input" id="comment-${q.id}" placeholder="Escribe aquí tus comentarios, detalles o feedback adicional..."></textarea>
+                    </div>
+                `;
+            }).join('');
+
+            // Add final general improvement field
+            html += `
+                <div class="question-card new" style="border-top: 4px solid var(--color-primary);">
+                    <div class="question-title" style="margin-bottom: 10px;">💡 Otras mejoras y sugerencias</div>
+                    <div class="question-hint">Espacio libre para detallar cualquier otra mejora, idea o cambio necesario no cubierto arriba.</div>
+                    <textarea class="comment-input" id="final-comments" placeholder="Describe aquí cualquier otra mejora, cambio de diseño, lógica o detalle específico..." style="min-height: 100px;"></textarea>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function toggleOption(element, qid, multi) {
+            const checkbox = element.querySelector('input');
+            const card = element.closest('.question-card');
+            
+            if (!multi) {
+                // Single selection - deselect others
+                card.querySelectorAll('.option').forEach(opt => {
+                    opt.classList.remove('selected');
+                    opt.querySelector('input').checked = false;
+                });
+            }
+            
+            checkbox.checked = !checkbox.checked;
+            element.classList.toggle('selected', checkbox.checked);
+            card.classList.toggle('answered', card.querySelectorAll('input:checked').length > 0);
+        }
+
+        function generateAndCopy() {
+            const skill = document.getElementById('skillSelect').value;
+            const btn = document.getElementById('mainButton');
+            
+            // Collect answers
+            const answers = [];
+            currentQuestions.forEach((q, idx) => {
+                const checked = document.querySelectorAll(`input[name="${q.id}"]:checked`);
+                const vals = Array.from(checked).map(c => c.value);
+                const comment = document.getElementById(`comment-${q.id}`).value;
+                answers.push({ 
+                    id: q.id, 
+                    question: q.q, 
+                    answer: vals.join(', ') || '(sin respuesta)',
+                    comment: comment
+                });
+            });
+            
+            // Generate output
+            let output = `## Mejora de Skill: ${skill}\n\n`;
+            output += `**Fecha:** ${new Date().toLocaleString('es-ES')}\n`;
+            output += `**Sesión:** ${(skillHistory[skill]?.improvements || 0) + 1}\n\n`;
+            output += `### Respuestas:\n\n`;
+            
+            answers.forEach((a, idx) => {
+                output += `**${idx + 1}. ${a.question}**\n→ Seleccionado: ${a.answer}\n`;
+                if (a.comment && a.comment.trim() !== '') {
+                    output += `→ Comentario: *${a.comment}*\n`;
+                }
+                output += `\n`;
+            });
+            
+            // Add final comments
+            const finalComments = document.getElementById('final-comments').value;
+            if (finalComments && finalComments.trim() !== '') {
+                output += `**💡 Otras mejoras y sugerencias**\n→ ${finalComments}\n\n`;
+            }
+            
+            output += `---\n\n`;
+            output += `**Instrucción:** Aplica las mejoras al skill \`${skill}\`. Esta es la sesión #${(skillHistory[skill]?.improvements || 0) + 1}.`;
+            
+            // Show output
+            document.getElementById('output').textContent = output;
+            document.getElementById('output').classList.add('visible');
+            
+            // Copy
+            navigator.clipboard.writeText(output).then(() => {
+                btn.classList.add('success');
+                btn.innerHTML = '✅ ¡Copiado!';
+                showToast();
+                
+                // Save to history
+                saveToHistory(skill, answers);
+                
+                setTimeout(() => {
+                    btn.classList.remove('success');
+                    btn.innerHTML = '📋 Generar y Copiar';
+                }, 3000);
+            });
+        }
+
+        function saveToHistory(skill, answers) {
+            if (!skillHistory[skill]) {
+                skillHistory[skill] = { answered: [], improvements: 0, sessions: [] };
+            }
+            
+            // Mark questions as answered
+            answers.forEach(a => {
+                if (!skillHistory[skill].answered.includes(a.id)) {
+                    skillHistory[skill].answered.push(a.id);
+                }
+            });
+            
+            // Keep only last 20 answered IDs to allow recycling
+            skillHistory[skill].answered = skillHistory[skill].answered.slice(-20);
+            
+            // Increment improvements
+            skillHistory[skill].improvements++;
+            
+            // Save session
+            skillHistory[skill].sessions.unshift({
+                date: new Date().toISOString(),
+                answers: answers
+            });
+            
+            // Keep only last 100 sessions
+            skillHistory[skill].sessions = skillHistory[skill].sessions.slice(0, 100);
+            
+            localStorage.setItem('skillHistory', JSON.stringify(skillHistory));
+        }
+
+        function renderHistory() {
+            loadAllHistory();
+            const container = document.getElementById('historyContainer');
+            
+            const skills = Object.keys(skillHistory).filter(s => skillHistory[s].sessions?.length > 0);
+            
+            if (skills.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>📭 No hay historial aún</p><p>Selecciona un skill y responde las preguntas para comenzar.</p></div>';
+                return;
+            }
+            
+            let html = '';
+            skills.forEach(skill => {
+                const data = skillHistory[skill];
+                data.sessions.slice(0, 10).forEach((session, idx) => {
+                    html += `
+                        <div class="history-card">
+                            <div class="history-header">
+                                <span class="history-skill">${skill}</span>
+                                <span class="history-date">${new Date(session.date).toLocaleString('es-ES')}</span>
+                            </div>
+                            <div class="history-answers">
+                                ${session.answers.slice(0, 3).map(a => `<p><strong>${a.question}</strong>: ${a.answer}</p>`).join('')}
+                                ${session.answers.length > 3 ? `<p><em>+${session.answers.length - 3} más...</em></p>` : ''}
+                            </div>
+                            <div class="history-actions">
+                                <button class="btn-small btn-edit" onclick="editSession('${skill}', ${idx})">✏️ Editar</button>
+                                <button class="btn-small btn-delete" onclick="deleteSession('${skill}', ${idx})">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function editSession(skill, idx) {
+            // Load session answers into the form
+            document.getElementById('skillSelect').value = skill;
+            switchTab('new');
+            loadSkillContext();
+            
+            // Pre-select answers from history
+            const session = skillHistory[skill].sessions[idx];
+            setTimeout(() => {
+                session.answers.forEach(a => {
+                    if (a.answer && a.answer !== '(sin respuesta)') {
+                        const vals = a.answer.split(', ');
+                        vals.forEach(v => {
+                            const input = document.querySelector(`input[name="${a.id}"][value="${v}"]`);
+                            if (input) {
+                                input.checked = true;
+                                input.closest('.option').classList.add('selected');
+                                input.closest('.question-card').classList.add('answered');
+                            }
+                        });
+                    }
+                });
+            }, 100);
+        }
+
+        function deleteSession(skill, idx) {
+            if (confirm('¿Eliminar esta sesión del historial?')) {
+                skillHistory[skill].sessions.splice(idx, 1);
+                localStorage.setItem('skillHistory', JSON.stringify(skillHistory));
+                renderHistory();
+            }
+        }
+
+        function resetForm() {
+            document.querySelectorAll('.option').forEach(o => {
+                o.classList.remove('selected');
+                o.querySelector('input').checked = false;
+            });
+            document.querySelectorAll('.question-card').forEach(c => c.classList.remove('answered'));
+            document.getElementById('output').classList.remove('visible');
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.add('visible');
+            setTimeout(() => toast.classList.remove('visible'), 3000);
+        }
+    </script>
+</body>
+</html>

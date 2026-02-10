@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#16213e">
+    <title>Sin conexión - ERP RG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 400px;
+        }
+
+        .icon {
+            font-size: 80px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        p {
+            color: #a0a0a0;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            display: inline-block;
+            background: #16213e;
+            color: white;
+            padding: 15px 40px;
+            border: 2px solid #ffffff;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .pending-badge {
+            background: #f39c12;
+            color: #1a1a2e;
+            padding: 10px 20px;
+            border-radius: 20px;
+            margin-top: 30px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="icon">📶</div>
+        <h1>Sin conexión</h1>
+        <p>No tienes conexión a internet. Los datos guardados localmente se sincronizarán automáticamente cuando
+            recuperes la señal.</p>
+        <button class="btn" onclick="location.reload()">🔄 Reintentar</button>
+        <div class="pending-badge" id="pendingBadge">
+            📱 <span id="pendingCount">0</span> ODT(s) pendientes de sincronizar
+        </div>
+    </div>
+    <script>
+        // Mostrar pendientes si hay
+        const pending = JSON.parse(localStorage.getItem('odt_pending_sync') || '[]');
+        if (pending.length > 0) {
+            document.getElementById('pendingBadge').style.display = 'block';
+            document.getElementById('pendingCount').textContent = pending.length;
+        }
+    </script>
+</body>
+
+</html>

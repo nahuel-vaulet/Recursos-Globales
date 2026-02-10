@@ -1,0 +1,185 @@
+MÓDULO 1: DEFINICIONES Y MAESTROS (Configuración)
+Estas tablas contienen los datos "fijos" que alimentan al resto del sistema.
+1.1 Tabla: Tipologias (Trabajos)
+•	id_tipologia (PK)
+•	nombre (Ej. Bacheo, Fuga, Vereda Especial)
+•	codigo_trabajo (Código interno de ASSA/RG)
+•	tiempo_limite_dias (Plazo para ejecución)
+•	unidad_medida ($M^3, M^2, ML,$ Unid)
+•	descripción larga
+•	descripción breve
+1.2 Tabla: Maestro_Materiales (Inventario & Costos)
+•	id_material (PK)
+•	nombre
+•	descripcion (Arena, Cemento, Losetas Vainilla, Cal, Tierra)
+•	unidad_medida ($M^3,$ Bolsas, Unidades)
+•	punto_pedido (Stock mínimo para alerta de acopio semanal)
+•	id_contacto_primario (FK a Contactos) | costo_primario
+•	id_contacto_secundario (FK a Contactos) | costo_secundario
+•	fecha_ultima_cotizacion (Para control de inflación)
+1.3 Tabla: Proveedores_y_Contactos
+•	id_contacto (PK)
+•	id_proveedor (FK a Tabla Proveedores: Razón Social, CUIT, Dirección)
+•	nombre_vendedor | telefono_contacto | email_vendedor
+•	observaciones (Horarios, formas de pago)
+
+ 
+MÓDULO 2: GESTIÓN OPERATIVA (ODTs y Programación)
+Control de las órdenes enviadas por ASSA y su planificación.
+2.1 Tabla: ODT_Maestro
+•	id_odt (PK)
+•	nro_odt_assa | direccion
+•	id_tipologia (FK)
+•	prioridad (Normal, Urgente)
+•	estado_gestion (Sin Programar, Programado, Ejecutado, Finalizado)
+•	fecha_inicio_plazo | fecha_vencimiento
+•	avance (Descripción de tarea realizada o porcentaje)
+•	inspector FK
+2.2 Tabla: Programacion_Semanal
+•	id_programacion (PK)
+•	id_odt (FK)
+•	id_cuadrilla (FK)
+•	fecha_programada
+•	estado_programacion (Tildado_Admin, Confirmado_ASSA)
+
+ 
+MÓDULO 3: LOGÍSTICA Y TRAZABILIDAD (Doble Stock)
+Trazabilidad total: ASSA / Oficina /Cuadrilla / Obra.
+3.1 Tabla: Stock_Saldos
+•	id_material (FK)
+•	stock_oficina (Cantidad física en pañol Rafaela)
+•	stock_cuadrilla_A / B / C... (Saldos cargados en cada vehículo)
+3.2 Tabla: Movimientos_y_Remitos
+•	id_movimiento (PK)
+•	nro_documento (Nro de remito ASSA o interno)
+•	tipo_movimiento (1. Recepción ASSA $\rightarrow$ Oficina | 2. Entrega Oficina $\rightarrow$ Cuadrilla | 3. Consumo Cuadrilla $\rightarrow$ Obra)
+•	id_material (FK) | cantidad
+•	id_cuadrilla (FK, si aplica) | id_odt (FK, si es consumo)
+•	fecha_hora | usuario_despacho
+
+ 
+MÓDULO 4: RECURSOS HUMANOS Y CUADRILLAS
+Administración del personal, su equipo y comportamiento.
+4.1 Tabla: Personal (Legajo Digital)
+•	id_personal (PK)
+•	nombre_apellido | dni | rol (Oficial/Ayudante)
+•	id_cuadrilla (FK) | id_kit_herramientas (FK)
+•	Datos Seguridad: Seguro_ART, Talle_Ropa_Calzado, Fecha_Ultima_Entrega_EPP, Vencimiento_Carnet_Conducir.
+•	Datos Salud: Grupo_Sanguineo, Alergias_Condiciones, Numero_emergencia.
+•	Administrativo: Fecha_Ingreso, CBU_Alias, Domicilio, Telefono_Personal, Link_Legajo_Digital.
+4.2 Tabla: Cuadrillas (Estructura de Trabajo)
+•	id_cuadrilla (PK)
+•	nombre_cuadrilla (Ej: Cuadrilla Hidráulica 1)
+•	tipo_especialidad (Veredas, Hidráulicos, Medidores, Calzada, Emergencias)
+•	id_vehiculo_asignado (FK) | id_celular_asignado
+•	zona_asignada | url_grupo_whatsapp
+•	estado_operativo (Activa, Mantenimiento, Baja)
+4.3 Tabla: Asistencia_y_Horas
+•	id_asistencia (PK)
+•	id_personal (FK) | fecha
+•	hora_entrada | hora_salida
+•	estado_dia (Presente, Falta Justificada, Injustificada, Día Lluvia)
+•	horas_emergencia (Horas nocturnas o fin de semana)
+
+ 
+MÓDULO 5: EJECUCIÓN Y CERTIFICACIÓN (Reportes)
+Información recolectada en calle para cobro y auditoría.
+5.1 Tabla: Partes_Diarios (Operativo)
+•	id_parte (PK) | id_odt (FK) | id_cuadrilla (FK)
+•	Tiempos: Hora_Inicio, Hora_Fin, Tiempo_Ejecucion_Real, Justificacion_Demora.
+•	Métricas: Largo, Ancho, Profundidad $\rightarrow$ Volumen_Calculado.
+•	Contingencia: Estado_Trabajo (Finalizado/Fallido), Codigo_Visita_Fallida (1-11), Monto_Disponibilidad.
+•	Calidad/Seguridad: Utilidades_Vallas, Control_Limpieza (Checkbox), Firma_Conformidad_URL.
+•	Evidencia: id_foto (FK a Tabla Fotos_ODT: Etapa Inicio/Proceso/Fin, URL Trello).
+5.2 Tabla: Partes_Semanales (Estratégico)
+•	id_resumen_semanal (PK)
+•	KPIs: Total_ODTs, Total_Fallidas, Indicador_Productividad.
+•	Recursos: Balance_Materiales_Consumidos, Km_Vehiculo_Semanal, Novedades_Herramientas.
+•	Personal: Total_Horas_Semanal, Novedades_ART.
+
+ 
+MÓDULO 6: ACTIVOS Y ADMINISTRACIÓN INTERNA
+6.1 Tabla: Vehiculos_y_Herramientas
+•	id_activo (PK) | tipo (Camión, Retropala, Amoladora, Generador)
+•	Identificación: Patente o Nro_Serie.
+•	Control Diario: Aceite, Combustible, Frenos, Estado (Operativo, Roto, Perdido).
+•	Mantenimiento: Proximo_Service_Km, Fecha_Ultimo_Inventario, Costo_Reposicion.
+6.2 Tabla: Administracion_Gastos_y_Sanciones
+•	Gastos: id_gasto, concepto (Insumos/Servicios), monto, fecha, responsable.
+•	Apercibimientos: id_sancion, id_personal (FK), fecha, motivo, pdf_adjunto (Sanción firmada).
+________________________________________
+Lógica de Relación Principal:
+1.	Programación: Al tildar una ODT en ODT_Maestro, se crea una Programacion_Semanal vinculada a una Cuadrilla.
+2.	Logística: Un remito en Movimientos de tipo "Entrega" resta del Stock_Oficina y suma al Stock_Cuadrilla de esa cuadrilla.
+3.	Cierre: El Parte_Diario descuenta material del Stock_Cuadrilla, cambia el estado en ODT_Maestro a "Finalizado" y queda listo para la certificación mensual de ASSA.
+ 
+MÓDULO 7: CALIDAD Y MEJORA CONTINUA
+Este módulo gestiona los desvíos entre lo planificado y lo ejecutado.
+7.1 Tabla: No_Conformidades (NC)
+•	id_nc (PK)
+•	origen (Interno, Inspección ASSA, Reclamo Propietario).
+•	id_odt (FK, opcional) | id_personal (FK, responsable).
+•	descripcion_desvio (Ej: Hormigón mal vibrado, vereda con desnivel).
+•	clasificación (Crítica, Mayor, Menor).
+•	estado_nc (Abierta, En Análisis, Implementada, Cerrada/Verificada).
+7.2 Tabla: Acciones_Correctivas_Preventivas (CAPA)
+•	id_accion (PK) | id_nc (FK).
+•	plan_de_accion (Pasos para corregir el error y evitar que se repita).
+•	responsable_ejecucion (FK a Personal).
+•	fecha_limite | fecha_cierre_real.
+•	verificacion_eficacia (¿El problema se solucionó realmente? Si/No).
+________________________________________
+ 
+MÓDULO 8: SEGURIDAD, HIGIENE Y 5S
+Enfocado en el orden del pañol y la seguridad en obra según el manual de RG.
+8.1 Tabla: Auditorias_5S
+•	id_auditoria (PK) | id_cuadrilla (FK) o sector (Pañol/Oficina).
+•	Puntajes por "S": * Seiri (Clasificar), Seiton (Orden), Seiso (Limpieza), Seiketsu (Estandarizar), Shitsuke (Disciplina).
+•	foto_evidencia_url (Antes y después de la auditoría).
+•	puntuación_total (KPI para el tablero de control).
+8.2 Tabla: Seguridad_E_Higiene
+•	id_registro_sh (PK) | id_personal (FK).
+•	tipo_registro (Entrega de EPP, Charla de 5 min, Accidente, Incidente/Casi-accidente).
+•	descripcion (Detalle de lo ocurrido o entregado).
+•	cumplimiento_vallas (Check de auditoría en calle según protocolo ASSA).
+________________________________________
+ 
+MÓDULO 9: ANÁLISIS DE PROBLEMAS (Gestión del Conocimiento)
+Herramientas para que el administrativo analice por qué fallan los procesos.
+9.1 Tabla: Metodo_Analisis (Los 5 Porqué / Ishikawa)
+•	id_analisis (PK) | id_nc (FK).
+•	metodologia (5 Porqué, Espina de Pescado).
+•	analisis_detalle (Desglose lógico: ¿Por qué falló? $\rightarrow$ ¿Por qué...? hasta llegar a la causa raíz).
+•	causa_raiz_identificada (Ej: Falta de capacitación, Herramienta defectuosa, Proveedor de mala calidad).
+________________________________________
+Cómo se integra todo en el flujo del ERP:
+1.	Detección: Si una ODT es rechazada por ASSA en la tabla Partes_Diarios, el sistema crea automáticamente una No_Conformidad.
+2.	Análisis: El administrativo abre la tabla Metodo_Analisis y aplica los 5 Porqué. Descubre que la causa raíz es un "vendedor de arena" que trajo material contaminado.
+3.	Acción: Se genera una Accion_Correctiva para dar de baja a ese proveedor secundario en la tabla Materiales.
+4.	Seguridad/5S: Los viernes, al hacer el balance de materiales, el administrativo audita el pañol con la tabla Auditorias_5S. Si la puntuación es baja, se genera una charla de capacitación en la tabla Seguridad_E_Higiene.
+ 
+ETAPA 1: El Motor de Producción (El 20% que genera el 80%)
+Objetivo: Digitalizar la calle y asegurar que cada trabajo realizado se convierta en dinero.
+1.	Tablas Críticas: ODT_Maestro, Partes_Diarios, Fotos_ODT y Cuadrillas.
+2.	Por qué es prioridad: Sin el reporte diario y las fotos (Inicio/Proceso/Fin), no hay certificación. Si no certificas, no cobras.
+3.	Funcionalidad clave: * Carga de ODTs desde ASSA.
+o	App simple para que el operario suba las 3 fotos obligatorias.
+o	Registro de Visitas Fallidas (códigos 1-11) para cobrar el monto por disponibilidad de cuadrilla inmediatamente.
+________________________________________
+ETAPA 2: Blindaje de Recursos y Logística
+Objetivo: Que la cuadrilla nunca se detenga por falta de materiales y que no se pierdan herramientas.
+1.	Tablas Críticas: Stock_Saldos, Movimientos_y_Remitos, Personal y Vehiculos_y_Herramientas.
+2.	Por qué es prioridad: El material que "desaparece" o el camión que se rompe por falta de aceite son pérdidas directas de tu beneficio neto. La trazabilidad de ASSA $\rightarrow$ Oficina $\rightarrow$ Cuadrilla es lo que cuida tu stock.
+3.	Funcionalidad clave:
+o	Control de Doble Stock (oficina vs. camión).
+o	Punto de Pedido: Alertas de acopio semanal para que el administrativo compre los jueves lo que se usa el lunes.
+o	Control de vencimiento de Seguros ART y carnets para poder entrar a las obras de ASSA sin rebotes.
+________________________________________
+ETAPA 3: Calidad, Mejora y Excelencia Operativa
+Objetivo: Reducir el retrabajo (costo hundido) y profesionalizar la gestión.
+1.	Tablas Críticas: No_Conformidades, Acciones_Correctivas, Auditorias_5S y Metodo_Analisis.
+2.	Por qué es prioridad: Reparar una vereda que quedó mal hecha (No Conformidad) cuesta el doble (materiales y horas extra). Aquí es donde pules el margen de ganancia eliminando errores repetitivos.
+3.	Funcionalidad clave:
+o	Análisis de Causa Raíz (5 Porqué) para entender por qué una cuadrilla rinde menos que otra.
+o	Metodología 5S: Auditorías rápidas al pañol y camiones para que encontrar una herramienta no lleve 20 minutos.
+o	Sistema de Apercibimientos vinculado a las No Conformidades para mejorar la disciplina.

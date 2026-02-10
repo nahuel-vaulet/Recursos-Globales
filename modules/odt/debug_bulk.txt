@@ -1,0 +1,115 @@
+2026-02-06 04:15:44 - User: Jefe Norte | Rol: 'JefeCuadrilla' | HasPerm: NO | EsJefe: YES
+2026-02-06 04:23:33 - User: Jefe Norte | Rol: 'JefeCuadrilla' | HasPerm: NO | EsJefe: YES
+2026-02-06 04:37:08 - User: Gerente | Rol: 'Gerente' | HasPerm: YES | EsJefe: NO
+2026-02-06 04:37:47 - User: Jefe Norte | Rol: 'JefeCuadrilla' | HasPerm: NO | EsJefe: YES
+2026-02-06 04:38:22 - User: Jefe Norte | Rol: 'JefeCuadrilla' | HasPerm: NO | EsJefe: YES
+2026-02-06 04:43:04 - User: Gerente | Rol: 'Gerente' | HasPerm: YES | EsJefe: NO
+2026-02-06 04:44:32 - User: Jefe Norte | Rol: 'JefeCuadrilla' | HasPerm: NO | EsJefe: YES
+2026-02-06 04:48:10 - User: Jefe Norte | Rol: 'JefeCuadrilla' | HasPerm: NO | EsJefe: YES
+ -> Received: {"ids":[4],"estado":"Ejecución"}
+2026-02-06 04:50:04 - User: Gerente | Rol: 'Gerente' | HasPerm: YES | EsJefe: NO
+ -> Received: {"ids":["4","2","1"],"estado":"Programado"}
+2026-02-06 04:52:51 - User: Gerente | Rol: 'Gerente' | HasPerm: YES | EsJefe: NO
+ -> Received: {"ids":["4","2","1"],"estado":"Programado"}
+2026-02-06 04:53:04 - User: Gerente | Rol: 'Gerente' | HasPerm: YES | EsJefe: NO
+ -> Received: {"ids":["1"],"estado":"Programado"}
+2026-02-06 04:53:27 - User: Gerente | Rol: 'Gerente' | HasPerm: YES | EsJefe: NO
+ -> Received: {"ids":["2"],"estado":"Programado"}
+2026-02-06 04:54:02 - User: Gerente | Rol: 'Gerente' | HasPerm: YES | EsJefe: NO
+ -> Received: {"ids":["4"],"estado":"Programado"}
+2026-02-06 04:56:22 - User: Jefe Norte | Rol: 'JefeCuadrilla' | HasPerm: NO | EsJefe: YES
+ -> Received: {"ids":["2"],"estado":"Ejecución"}
+2026-02-06 04:56:40 - User: Jefe Norte | Rol: 'JefeCuadrilla' | HasPerm: NO | EsJefe: YES
+ -> Received: {"ids":["4"],"estado":"Ejecutado"}
+2026-02-06 05:00:17 - User: Gerente | Rol: 'Gerente' | HasPerm: YES | EsJefe: NO
+ -> Received: {"ids":["4","2","1"],"estado":"Programado"}
+2026-02-06 05:01:42 - User: Jefe Norte | Rol: 'JefeCuadrilla' | HasPerm: NO | EsJefe: YES
+ -> Received: {"ids":["2","4"],"estado":"Ejecución"}
+2026-02-06 05:08:55 - User: Gerente | Rol: 'Gerente' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["4","2","1"],"cuadrilla":"1","fecha":"2026-02-06","turno":"Mañana","estado":"Programado"}
+2026-02-06 05:09:46 - User: Gerente | Rol: 'Gerente' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["4","2","1"],"cuadrilla":"2","fecha":"2026-02-06","turno":"Mañana","estado":"Programado"}
+2026-02-06 05:19:02 - User: Gerente | Rol: 'Gerente' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["4","2","1"],"cuadrilla":"2","fecha":"2026-02-06","turno":"Mañana","estado":"Programado"}
+ -> Processing Unified Update for 3 IDs
+ -> Assigning Squad: 2
+ -> Changing Status to: Programado
+ -> Updated 0 rows
+ -> COMMIT SUCCESS
+2026-02-06 05:19:14 - User: Gerente | Rol: 'Gerente' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["4","2","1"],"cuadrilla":"1","fecha":"2026-02-06","turno":"Mañana","estado":"Programado"}
+ -> Processing Unified Update for 3 IDs
+ -> Assigning Squad: 1
+ -> Changing Status to: Programado
+ -> Updated 0 rows
+ -> COMMIT SUCCESS
+2026-02-06 05:20:22 - User: Jefe Norte | Rol: 'JefeCuadrilla' | HasPerm: NO | EsJefe: YES
+ -> Received: {"ids":["2"],"estado":"Ejecución"}
+2026-02-06 05:20:37 - User: Jefe Norte | Rol: 'JefeCuadrilla' | HasPerm: NO | EsJefe: YES
+ -> Received: {"ids":["1"],"estado":"Ejecutado"}
+2026-02-06 05:20:43 - User: Jefe Norte | Rol: 'JefeCuadrilla' | HasPerm: NO | EsJefe: YES
+ -> Received: {"ids":["4"],"estado":"Postergado"}
+2026-02-06 12:54:15 - User: Gerente | Rol: 'Gerente' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["4","2","1"],"cuadrilla":"2","fecha":"2026-02-06","turno":"Mañana","estado":""}
+2026-02-06 12:54:24 - User: Gerente | Rol: 'Gerente' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["4","2","1"],"cuadrilla":"2","fecha":"2026-02-06","turno":"Mañana","estado":""}
+2026-02-06 12:54:34 - User: Gerente | Rol: 'Gerente' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["4","2","1"],"cuadrilla":"2","fecha":"2026-02-06","turno":"Mañana","estado":"Programado"}
+ -> Processing Unified Update for 3 IDs
+ -> Assigning Squad: 2
+ -> Changing Status to: Programado
+ -> Updated 3 rows
+ -> COMMIT SUCCESS
+2026-02-06 13:40:54 - User: Jefe Sur | Rol: 'JefeCuadrilla' | HasPerm: NO | EsJefe: YES
+ -> Received: {"ids":["4"],"estado":"Ejecución"}
+2026-02-06 13:41:03 - User: Jefe Sur | Rol: 'JefeCuadrilla' | HasPerm: NO | EsJefe: YES
+ -> Received: {"ids":["1"],"estado":"Ejecutado"}
+2026-02-08 21:39:38 - User: Gerente | Rol: '' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["2","1"],"cuadrilla":"1","fecha":"2026-02-08","turno":"Mañana","estado":"Programado"}
+ -> Processing Unified Update for 2 IDs
+ -> Assigning Squad: 1
+ -> Changing Status to: Programado
+ -> Updated 2 rows
+ -> COMMIT SUCCESS
+2026-02-08 21:39:54 - User: Gerente | Rol: '' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["4"],"cuadrilla":"2","fecha":"2026-02-08","turno":"Mañana","estado":"Programado"}
+ -> Processing Unified Update for 1 IDs
+ -> Assigning Squad: 2
+ -> Changing Status to: Programado
+ -> Updated 1 rows
+ -> COMMIT SUCCESS
+2026-02-09 14:42:39 - User: Administrativo | Rol: '' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["4","2","1"],"cuadrilla":"","fecha":"2026-02-09","turno":"Mañana","estado":"Programado"}
+ -> Processing Unified Update for 3 IDs
+ -> No Squad Assignment (empty fields)
+ -> Changing Status to: Programado
+ -> Updated 3 rows
+ -> COMMIT SUCCESS
+2026-02-09 15:11:52 - User: Administrativo | Rol: '' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["4"],"cuadrilla":"1","fecha":"2026-02-09","turno":"Mañana","estado":"Sin Programar"}
+ -> Processing Unified Update for 1 IDs
+ -> Assigning Squad: 1
+ -> Changing Status to: Sin Programar
+ -> Updated 1 rows
+ -> COMMIT SUCCESS
+2026-02-09 15:13:19 - User: Administrativo | Rol: '' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["4"],"cuadrilla":"1","fecha":"2026-02-09","turno":"Mañana","estado":"Programado"}
+ -> Processing Unified Update for 1 IDs
+ -> Assigning Squad: 1
+ -> Changing Status to: Programado
+ -> Updated 1 rows
+ -> COMMIT SUCCESS
+2026-02-09 15:44:43 - User: Gerente | Rol: '' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["4","1"],"cuadrilla":"1","fecha":"2026-02-09","turno":"Mañana","estado":"Ejecutado"}
+ -> Processing Unified Update for 2 IDs
+ -> Assigning Squad: 1
+ -> Changing Status to: Ejecutado
+ -> Updated 2 rows
+ -> COMMIT SUCCESS
+2026-02-09 15:52:37 - User: Gerente | Rol: '' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["4"],"cuadrilla":"2","fecha":"2026-02-09","turno":"Mañana","estado":"Programado"}
+ -> Processing Unified Update for 1 IDs
+ -> Assigning Squad: 2
+ -> Changing Status to: Programado
+ -> Updated 1 rows
+ -> COMMIT SUCCESS

@@ -1,0 +1,111 @@
+GUÍA DE ESTILOS Y VARIABLES CSS - RECURSOS GLOBALES ERP
+=======================================================
+FECHA: 2026-02-06
+OBJETIVO: Mantener la consistencia estética al 100% en nuevos módulos.
+
+1. VARIABLES GLOBALES (CSS VARIABLES)
+-------------------------------------
+Estas variables definen el "look & feel". Úsalas siempre en lugar de valores hardcodeados.
+
+/* MODO OSCURO (POR DEFECTO) */
+--bg-primary: #0d1b2a;       /* Fondo principal */
+--bg-secondary: #1b263b;     /* Fondo secundario (sidebar, menús) */
+--bg-tertiary: #274060;      /* Fondos terciarios (inputs, hovers) */
+--bg-card: #1e2a3a;          /* Fondo de tarjetas */
+
+/* COLORES DE TEXTO */
+--text-primary: #ffffff;
+--text-secondary: rgba(255, 255, 255, 0.7);
+--text-muted: rgba(255, 255, 255, 0.5);
+
+/* COLORES DE ACENTO */
+--accent-primary: #64b5f6;   /* Azul principal */
+--accent-secondary: #90caf9; /* Azul claro */
+--accent-glow: rgba(100, 181, 246, 0.4); /* Efecto resplandor */
+
+/* COLORES SEMÁNTICOS */
+--color-success: #10b981;
+--color-warning: #f59e0b;
+--color-danger: #ef4444;
+--color-info: #3b82f6;
+
+/* ESPACIADO */
+--spacing-xs: 4px; --spacing-sm: 8px; --spacing-md: 16px; --spacing-lg: 24px; --spacing-xl: 32px;
+
+/* BORDES */
+--border-radius-sm: 10px; --border-radius-md: 14px; --border-radius-lg: 18px;
+
+/* SOMBRAS */
+--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+--shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
+--glow-primary: 0 0 20px var(--accent-glow);
+
+2. COMPONENTES PRINCIPALES (CLASES)
+-----------------------------------
+
+A. TARJETAS (CARDS)
+   Usa esto para contenedores principales.
+   <div class="card" style="border-top: 4px solid var(--color-primary);">
+       <div class="card-header">...</div>
+       <div class="card-body">...</div>
+   </div>
+   
+   Clases CSS: .card, .card-header, .card-body
+
+B. BOTONES
+   <button class="btn btn-primary">Acción Principal</button>
+   <button class="btn btn-outline">Secundario/Cancelar</button>
+   <button class="btn btn-danger">Eliminar</button>
+   <button class="btn-icon"><i class="fas fa-edit"></i></button>
+
+   Clases CSS: .btn, .btn-primary, .btn-outline, .btn-danger, .btn-icon
+
+C. TABLAS
+   Usa la estructura estándar HTML5.
+   <table class="table">
+       <thead>
+           <tr><th>Título</th></tr>
+       </thead>
+       <tbody>...</tbody>
+   </table>
+
+   Estilos aplicados automáticamente a `.table`:
+   - Cabecera sticky.
+   - Filas zebra (alternadas).
+   - Hover effect en filas.
+   - Bordes y colores adaptados al tema oscuro.
+
+D. BARRA DE FILTROS
+   Contenedor superior para búsquedas y selectores.
+   <div class="filter-bar">
+       <div class="filter-group">
+           <label>Buscar</label>
+           <input class="form-control-sm" ...>
+       </div>
+   </div>
+
+   Clases CSS: .filter-bar, .filter-group, .form-control-sm
+
+E. INPUTS Y FORMULARIOS
+   Usa `.form-control` para inputs grandes (en formularios de edición) y `.form-control-sm` para filtros.
+   
+   .form-group { margin-bottom: 15px; }
+   .form-control { width: 100%; border-radius: 6px; ... }
+
+3. MODO CLARO (LIGHT MODE)
+--------------------------
+El sistema soporta modo claro mediante el atributo `data-theme="light"` en el body.
+Las variables CSS cambian automáticamente:
+--bg-primary: #f0f4f8;
+--text-primary: #1a1a2e;
+--accent-primary: #2563eb;
+... (El resto se ajusta solo si usas las variables)
+
+4. FUENTES E ICONOS
+-------------------
+Fuente: 'Inter', system-ui, sans-serif
+Iconos: FontAwesome 6.0 (<i class="fas fa-user"></i>)
+
+REGLA DE ORO: 
+NO uses colores HEX fijos (ej. #FFFFFF) en tu CSS nuevo. 
+Usa SIEMPRE `var(--text-primary)`, `var(--bg-card)`, etc. para garantizar que el cambio de tema funcione.

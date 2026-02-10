@@ -1,0 +1,66 @@
+ESPECIFICACIÓN DE REQUERIMIENTOS Módulo de Gestión de Stock - Versión
+Moderna
+
+1.  OBJETIVO GENERAL
+
+Desarrollar una aplicación web moderna de gestión de stock bajo
+arquitectura CRUD, orientada a la trazabilidad de materiales, control de
+consumo por cuadrillas y visualización analítica mediante un dashboard
+interactivo, con experiencia de usuario tipo SaaS.
+
+2.  REQUERIMIENTOS FUNCIONALES
+
+RF-01 Gestión de Materiales Alta, baja y modificación de materiales con
+definición de stock mínimo y unidad de medida.
+
+RF-02 Registro de Movimientos Registro de entradas y salidas con fecha,
+usuario y cuadrilla asociada.
+
+RF-03 Control de Cuadrillas Asignación obligatoria de cuadrillas a cada
+egreso.
+
+RF-04 Sistema de Alertas Alertas automáticas visuales cuando el stock
+cae bajo el mínimo.
+
+RF-05 Filtros Dinámicos Consultas por fecha, material, cuadrilla y tipo
+de movimiento.
+
+RF-06 Dashboard Analítico Visualización de KPIs, tendencias de consumo y
+comparativas mensuales.
+
+RF-07 Gestión de Usuarios y Roles Autenticación con perfiles
+(Administrador, Supervisor, Operador).
+
+RF-08 Búsqueda Inteligente Buscador en tiempo real por nombre o código.
+
+RF-09 Auditoría de Movimientos Registro histórico de cambios y acciones.
+
+RF-10 Exportación de Reportes Exportación a PDF y Excel.
+
+3.  REQUERIMIENTOS NO FUNCIONALES
+
+Diseño Mobile First y Responsive. Uso de Bootstrap 5.3. Interacción
+asíncrona con AJAX / Fetch API. Soporte Light / Dark Mode. Sidebar tipo
+Admin Panel. Animaciones CSS y microinteracciones. Optimización con
+paginación y lazy loading. Arquitectura backend con endpoints tipo API
+REST en PHP. Base de datos MySQL. Entorno XAMPP + VS Code.
+
+4.  BASE DE DATOS
+
+materiales: id, nombre, unidad_medida, stock_actual, stock_minimo.
+cuadrillas: id, nombre, zona_trabajo. movimientos: id, material_id,
+cuadrilla_id, tipo, cantidad, fecha, usuario_id. usuarios: id, nombre,
+email, password_hash, rol, estado. auditoria: id, usuario_id, accion,
+tabla, fecha, valor_anterior.
+
+5.  UI / UX
+
+Dashboard con cards métricas. Semáforo de stock (verde, amarillo, rojo).
+Progress bars de consumo. Toasts de notificación. Buscador instantáneo.
+Modo oscuro. Sidebar fija. Animaciones suaves.
+
+6.  HOJA DE RUTA
+
+Maquetación con Bootstrap. Desarrollo CRUD. Integración AJAX. Sistema de
+roles. Dashboard con Chart.js. Exportación PDF / Excel. Optimización
+final.

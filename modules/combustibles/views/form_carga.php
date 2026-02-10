@@ -1,0 +1,137 @@
+<?php
+// Load necessary data for the form
+require_once '../../../config/database.php';
+$tanques = $pdo->query("SELECT * FROM combustibles_tanques WHERE estado='Activo'")->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch Active Squads with their assigned Vehicle
+// Fetch Active Squads
+$cuadrillas = $pdo->query("SELECT id_cuadrilla, nombre_cuadrilla FROM cuadrillas WHERE estado_operativo = 'Activa' ORDER BY nombre_cuadrilla")->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch All Vehicles (including new columns)
+$vehiculos = $pdo->query("SELECT id_vehiculo, marca, modelo, patente, id_cuadrilla, tipo_combustible FROM vehiculos WHERE estado = 'Operativo' ORDER BY marca, modelo")->fetchAll(PDO::FETCH_ASSOC);
+
+$personal = $pdo->query("SELECT id_personal, nombre_apellido, id_cuadrilla FROM personal ORDER BY nombre_apellido")->fetchAll(PDO::FETCH_ASSOC);
+
+$json_cuadrillas = json_encode($cuadrillas);
+$json_vehiculos = json_encode($vehiculos);
+$json_personal = json_encode($personal);
+?>
+
+<form id="formCarga" onsubmit="submitCarga(event)">
+
+    <!-- TIPO DE CARGA TOGGLE -->
+    <div class="form-group" style="text-align: center; margin-bottom: 20px;">
+        <div
+            style="display: flex; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; justify-content: center;">
+            <button type="button" id="btnStock" class="btn btn-light active"
+                style="flex: 1; border-radius: 0; background: #e6f7ff; color: #0073A8; font-weight: bold;"
+                onclick="setMode('stock')">
+                <i class="fas fa-warehouse"></i> Carga a Stock
+            </button>
+            <button type="button" id="btnVehicle" class="btn btn-light" style="flex: 1; border-radius: 0;"
+                onclick="setMode('vehiculo')">
+                <i class="fas fa-gas-pump"></i> Carga Directa (Estación)
+            </button>
+        </div>
+        <!-- Hidden input to store value -->
+        <input type="hidden" name="destino_tipo" id="inputDestinoTipo" value="stock">
+    </div>
+
+    <!-- SECCION STOCK (Tanque) -->
+    <div id="sectionStock">
+        <div class="form-group">
+            <label>Tanque de Destino</label>
+            <select name="id_tanque" class="form-control">
+                <?php foreach ($tanques as $t): ?>
+                    <option value="<?php echo $t['id_tanque']; ?>">
+                        <?php echo $t['nombre']; ?> (<?php echo $t['tipo_combustible']; ?>)
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+    </div>
+
+    <!-- SECCION VEHICULO DIRECTO -->
+    <div id="sectionVehicle" class="p-3 mb-3 border rounded" style="display: none;">
+        <div class="form-group">
+            <label>Tipo de Combustible</label>
+            <select name="tipo_combustible" class="form-control">
+                <option value="Gasoil">Gasoil / Diesel</option>
+                <option value="Nafta">Nafta</option>
+                <option value="GNC">GNC</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Cuadrilla</label>
+            <select name="id_cuadrilla" id="select_cuadrilla_carga" class="form-control"
+                onchange="onCuadrillaCargaChange()">
+                <option value="">Seleccione Cuadrilla...</option>
+                <?php foreach ($cuadrillas as $c): ?>
+                    <option value="<?php echo $c['id_cuadrilla']; ?>"><?php echo $c['nombre_cuadrilla']; ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Vehículo</label>
+            <select name="id_vehiculo" id="select_vehiculo_carga" class="form-control">
+                <option value="">-- Sin Vehículo --</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Responsable (Chofer)</label>
+            <select name="conductor" id="select_conductor_carga" class="form-control">
+                <option value="">-- Seleccione --</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- CAMPOS COMUNES -->
+    <div class="row" style="display: flex; gap: 10px;">
+        <div class="col" style="flex: 1;">
+            <div class="form-group">
+                <label>Litros / M3</label>
+                <input type="number" step="0.01" name="litros" class="form-control" required placeholder="0.00">
+            </div>
+        </div>
+        <div class="col" style="flex: 1;">
+            <div class="form-group">
+                <label>Precio Total ($)</label>
+                <input type="number" step="0.01" name="precio_unitario" class="form-control" placeholder="Opcional">
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>Proveedor / Factura</label>
+        <div style="display: flex; gap: 5px;">
+            <input type="text" name="proveedor" class="form-control" placeholder="Proveedor" style="flex: 1;">
+            <input type="text" name="nro_factura" class="form-control" placeholder="N° Factura" style="flex: 1;"
+                required>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label><i class="fas fa-camera"></i> Foto del Ticket (Opcional)</label>
+        <input type="file" name="foto_ticket" class="form-control" accept="image/*" capture="environment">
+    </div>
+
+    <div class="form-group" style="margin-top: 10px;">
+        <label>Fecha</label>
+        <input type="datetime-local" name="fecha_hora" class="form-control" value="<?php echo date('Y-m-d\TH:i'); ?>"
+            required>
+    </div>
+
+    <div class="modal-actions" style="margin-top: 20px;">
+        <button type="button" class="btn btn-outline" onclick="closeCombustibleModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar Ingreso</button>
+    </div>
+
+    <!-- HIDDEN DATA PAYLOAD -->
+    <div id="server-data-carga" data-cuadrillas='<?php echo htmlspecialchars($json_cuadrillas, ENT_QUOTES, 'UTF-8'); ?>'
+        data-personal='<?php echo htmlspecialchars($json_personal, ENT_QUOTES, 'UTF-8'); ?>'
+        data-vehiculos='<?php echo htmlspecialchars($json_vehiculos, ENT_QUOTES, 'UTF-8'); ?>' style="display:none;">
+    </div>
+</form>

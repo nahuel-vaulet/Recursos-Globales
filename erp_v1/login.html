@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesion | ERP Gestion de Stock</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="assets/css/variables.css">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            min-height: 100vh;
+            display: flex;
+            background: var(--color-background);
+        }
+
+        .login-page {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        .login-branding {
+            flex: 1;
+            background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-2xl);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-branding::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            top: -100px;
+            right: -100px;
+        }
+
+        .brand-logo {
+            width: 160px;
+            height: 160px;
+            background: linear-gradient(180deg, #ffffff 0%, #f0f4f8 100%);
+            border-radius: 20px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            z-index: 1;
+        }
+
+        .brand-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .brand-tagline {
+            color: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            margin-top: var(--spacing-xl);
+            z-index: 1;
+        }
+
+        .brand-tagline h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .brand-tagline p {
+            font-size: 0.95rem;
+            opacity: 0.8;
+        }
+
+        .login-form-panel {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-2xl);
+            background: var(--color-surface);
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .login-header {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .login-header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--color-neutral-dark);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .login-header p {
+            color: var(--color-neutral);
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--color-neutral-dark);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper i.input-icon {
+            position: absolute;
+            left: 14px;
+            color: var(--color-neutral-light);
+            font-size: 1.1rem;
+            pointer-events: none;
+        }
+
+        .form-control {
+            width: 100%;
+            height: 48px;
+            padding: 0 44px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-family: var(--font-family);
+            font-size: 0.95rem;
+            color: var(--color-neutral-dark);
+            background: var(--color-surface);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 4px rgba(0, 115, 168, 0.1);
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 14px;
+            background: none;
+            border: none;
+            color: var(--color-neutral-light);
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .password-toggle:hover {
+            color: var(--color-primary);
+        }
+
+        .login-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+            font-size: 0.875rem;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            color: var(--color-neutral);
+        }
+
+        .remember-me input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--color-primary);
+        }
+
+        .forgot-link {
+            color: var(--color-primary);
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .btn-login {
+            width: 100%;
+            height: 48px;
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-family: var(--font-family);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 115, 168, 0.35);
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: var(--spacing-lg);
+            display: none;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.875rem;
+        }
+
+        .alert.error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+        }
+
+        .alert.show {
+            display: flex;
+            animation: shake 0.4s ease;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20%,
+            60% {
+                transform: translateX(-6px);
+            }
+
+            40%,
+            80% {
+                transform: translateX(6px);
+            }
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: var(--spacing-xl);
+            font-size: 0.8rem;
+            color: var(--color-neutral-light);
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: var(--color-surface);
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            color: var(--color-neutral);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .theme-toggle:hover {
+            background: var(--color-background);
+            color: var(--color-primary);
+        }
+
+        .btn-loading {
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        [data-theme="dark"] .login-form-panel {
+            background: #1e293b;
+        }
+
+        [data-theme="dark"] .form-control {
+            background: #334155;
+            border-color: #475569;
+            color: #f1f5f9;
+        }
+
+        [data-theme="dark"] .alert.error {
+            background: #450a0a;
+            border-color: #7f1d1d;
+            color: #fca5a5;
+        }
+
+        [data-theme="dark"] .theme-toggle {
+            background: #334155;
+            border-color: #475569;
+        }
+
+        @media (max-width: 900px) {
+            .login-branding {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-form-panel {
+                padding: var(--spacing-lg);
+            }
+
+            .login-options {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema"><i class="bi bi-moon-fill"
+            id="theme-icon"></i></button>
+
+    <div class="login-page">
+        <div class="login-branding">
+            <div class="brand-logo"><img src="assets/img/logo.png" alt="Recursos Globales"></div>
+            <div class="brand-tagline">
+                <h2>Gestion de Stock</h2>
+                <p>Control total de tu inventario</p>
+            </div>
+        </div>
+
+        <div class="login-form-panel">
+            <div class="login-container">
+                <div class="login-header">
+                    <h1>Bienvenido</h1>
+                    <p>Ingresa tus credenciales para continuar</p>
+                </div>
+
+                <div class="alert error" id="login-alert"><i class="bi bi-exclamation-circle"></i><span
+                        id="alert-message">Credenciales incorrectas</span></div>
+
+                <form id="login-form" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label class="form-label">Correo electronico</label>
+                        <div class="input-wrapper">
+                            <input type="email" class="form-control" id="email" placeholder="tu@email.com" required
+                                autocomplete="email">
+                            <i class="bi bi-envelope input-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Contrasena</label>
+                        <div class="input-wrapper">
+                            <input type="password" class="form-control" id="password" placeholder="********" required
+                                autocomplete="current-password">
+                            <i class="bi bi-lock input-icon"></i>
+                            <button type="button" class="password-toggle" onclick="togglePassword()"><i
+                                    class="bi bi-eye" id="password-icon"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="login-options">
+                        <label class="remember-me"><input type="checkbox" id="remember"><span>Recordarme</span></label>
+                        <a href="#" class="forgot-link">Olvidaste tu contrasena?</a>
+                    </div>
+
+                    <button type="submit" class="btn-login" id="btn-login"><span>Iniciar Sesion</span><i
+                            class="bi bi-arrow-right"></i></button>
+                </form>
+
+                <div class="login-footer">
+                    <p>ERP Gestion de Stock v1.0 - Recursos Globales</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container"></div>
+
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/utils.js"></script>
+    <script>
+        function togglePassword() {
+            const input = document.getElementById('password');
+            const icon = document.getElementById('password-icon');
+            if (input.type === 'password') { input.type = 'text'; icon.classList.replace('bi-eye', 'bi-eye-slash'); }
+            else { input.type = 'password'; icon.classList.replace('bi-eye-slash', 'bi-eye'); }
+        }
+
+        function toggleTheme() {
+            const newTheme = utils.toggleDarkMode();
+            document.getElementById('theme-icon').className = newTheme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.getElementById('theme-icon').className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+        });
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('btn-login');
+            const alert = document.getElementById('login-alert');
+
+            alert.classList.remove('show');
+            btn.classList.add('btn-loading');
+            btn.innerHTML = '<div class="spinner"></div>';
+
+            try {
+                const response = await api.post('/auth.php', { action: 'login', email: email, password: password });
+                if (response.success) {
+                    api.setToken(response.token);
+                    api.setUser(response.user);
+                    utils.showToast('Bienvenido!', 'success');
+                    setTimeout(() => { window.location.href = 'index.html'; }, 500);
+                }
+            } catch (error) {
+                document.getElementById('alert-message').textContent = error.message || 'Credenciales incorrectas';
+                alert.classList.add('show');
+                btn.classList.remove('btn-loading');
+                btn.innerHTML = '<span>Iniciar Sesion</span><i class="bi bi-arrow-right"></i>';
+            }
+        }
+
+        if (api.token && api.getUser()) window.location.href = 'index.html';
+    </script>
+</body>
+
+</html>

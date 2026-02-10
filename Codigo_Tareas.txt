@@ -1,0 +1,1893 @@
+================================================================================
+ARCHIVO: server/database_setup.sql
+================================================================================
+-- Task Manager Database Setup
+-- IMPORTANTE: Este script solo debe ejecutarse UNA VEZ para crear la base de datos inicial
+-- Si ya tienes tareas guardadas, NO vuelvas a ejecutar este script completo
+-- Solo ejecuta las partes que necesites (por ejemplo, crear solo la base de datos o las tablas)
+
+CREATE DATABASE IF NOT EXISTS task_manager;
+USE task_manager;
+
+-- Create default user if not exists
+CREATE TABLE IF NOT EXISTS usuarios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert default user for development (if not exists)
+INSERT IGNORE INTO usuarios (id, nombre, email, password_hash) 
+VALUES (1, 'Usuario Default', 'default@taskmanager.local', 'no-auth');
+
+-- Create tareas table (IF NOT EXISTS para no borrar datos existentes)
+CREATE TABLE IF NOT EXISTS tareas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT DEFAULT 1,
+    titulo VARCHAR(200) NOT NULL,
+    descripcion TEXT,
+    fecha_limite DATE,
+    prioridad ENUM('Alta', 'Media', 'Baja') DEFAULT 'Media',
+    estado ENUM('Pendiente', 'En progreso', 'Completada', 'Cancelada') DEFAULT 'Pendiente',
+    categoria VARCHAR(50) DEFAULT 'Otros',
+    recordatorio_especial BOOLEAN DEFAULT FALSE,
+    fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+    responsable VARCHAR(100) DEFAULT 'Cache',
+    fecha_completada DATETIME DEFAULT NULL,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
+================================================================================
+ARCHIVO: server/config/db.php
+================================================================================
+<?php
+class Database {
+    private $host = "localhost";
+    private $db_name = "task_manager";
+    private $username = "root";
+    private $password = "";
+    public $conn;
+
+    public function getConnection() {
+        $this->conn = null;
+
+        try {
+            $this->conn = new PDO("mysql:host=" . $this->host . ";dbname=" . $this->db_name, $this->username, $this->password);
+            $this->conn->exec("set names utf8");
+            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        } catch(PDOException $exception) {
+            echo "Connection error: " . $exception->getMessage();
+        }
+
+        return $this->conn;
+    }
+}
+?>
+
+================================================================================
+ARCHIVO: server/public/index.php (API ROUTER)
+================================================================================
+<?php
+header("Access-Control-Allow-Origin: *");
+header("Content-Type: application/json; charset=UTF-8");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Max-Age: 3600");
+header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+include_once '../config/db.php';
+
+// Get database connection
+$database = new Database();
+$db = $database->getConnection();
+
+// Parse the request
+$request = $_SERVER['REQUEST_URI'];
+$request = strtok($request, '?');
+$method = $_SERVER['REQUEST_METHOD'];
+
+// Extract task ID if present (e.g., /api/tasks/123)
+$taskId = null;
+if (preg_match('/\/api\/tasks\/(\d+)/', $request, $matches)) {
+    $taskId = $matches[1];
+}
+
+// Route: /api/tasks
+if (strpos($request, '/api/tasks') !== false) {
+
+    // GET - List all tasks or get single task
+    if ($method === 'GET') {
+        try {
+            if ($taskId) {
+                $stmt = $db->prepare("SELECT * FROM tareas WHERE id = ?");
+                $stmt->execute([$taskId]);
+                $task = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($task) {
+                    echo json_encode($task);
+                } else {
+                    http_response_code(404);
+                    echo json_encode(["message" => "Task not found"]);
+                }
+            } else {
+                // Get all tasks (using usuario_id = 1 for now, no auth)
+                $stmt = $db->prepare("SELECT * FROM tareas ORDER BY fecha_creacion DESC");
+                $stmt->execute();
+                $tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                echo json_encode($tasks);
+            }
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(["message" => "Error fetching tasks", "error" => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    // POST - Create new task
+    if ($method === 'POST') {
+        try {
+            $data = json_decode(file_get_contents("php://input"), true);
+
+            if (!isset($data['titulo']) || empty($data['titulo'])) {
+                http_response_code(400);
+                echo json_encode(["message" => "Title is required"]);
+                exit;
+            }
+
+            $stmt = $db->prepare("INSERT INTO tareas (usuario_id, titulo, descripcion, fecha_limite, prioridad, estado, responsable) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                1, // Default user ID (no auth for now)
+                $data['titulo'],
+                $data['descripcion'] ?? '',
+                $data['fecha_limite'] ?? null,
+                $data['prioridad'] ?? 'Baja',
+                $data['estado'] ?? 'Pendiente',
+                $data['responsable'] ?? 'Cache'
+            ]);
+
+            $newId = $db->lastInsertId();
+
+            // Fetch the created task
+            $stmt = $db->prepare("SELECT * FROM tareas WHERE id = ?");
+            $stmt->execute([$newId]);
+            $task = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            http_response_code(201);
+            echo json_encode($task);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(["message" => "Error creating task", "error" => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    // PUT - Update task
+    if ($method === 'PUT' && $taskId) {
+        try {
+            $data = json_decode(file_get_contents("php://input"), true);
+
+            // Build dynamic update query
+            $fields = [];
+            $values = [];
+
+            if (isset($data['titulo'])) {
+                $fields[] = "titulo = ?";
+                $values[] = $data['titulo'];
+            }
+            if (isset($data['descripcion'])) {
+                $fields[] = "descripcion = ?";
+                $values[] = $data['descripcion'];
+            }
+            if (isset($data['fecha_limite'])) {
+                $fields[] = "fecha_limite = ?";
+                $values[] = $data['fecha_limite'];
+            }
+            if (isset($data['prioridad'])) {
+                $fields[] = "prioridad = ?";
+                $values[] = $data['prioridad'];
+            }
+            if (isset($data['estado'])) {
+                $fields[] = "estado = ?";
+                $values[] = $data['estado'];
+
+                // Handle completion date logic
+                if ($data['estado'] === 'Completada') {
+                    $fields[] = "fecha_completada = NOW()";
+                } else {
+                    $fields[] = "fecha_completada = NULL";
+                }
+            }
+            if (isset($data['responsable'])) {
+                $fields[] = "responsable = ?";
+                $values[] = $data['responsable'];
+            }
+
+            if (empty($fields)) {
+                http_response_code(400);
+                echo json_encode(["message" => "No fields to update"]);
+                exit;
+            }
+
+            $values[] = $taskId;
+            $sql = "UPDATE tareas SET " . implode(", ", $fields) . " WHERE id = ?";
+            $stmt = $db->prepare($sql);
+            $stmt->execute($values);
+
+            // Fetch the updated task
+            $stmt = $db->prepare("SELECT * FROM tareas WHERE id = ?");
+            $stmt->execute([$taskId]);
+            $task = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            echo json_encode($task);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(["message" => "Error updating task", "error" => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    // DELETE - Delete task
+    if ($method === 'DELETE' && $taskId) {
+        try {
+            $stmt = $db->prepare("DELETE FROM tareas WHERE id = ?");
+            $stmt->execute([$taskId]);
+
+            if ($stmt->rowCount() > 0) {
+                echo json_encode(["message" => "Task deleted successfully"]);
+            } else {
+                http_response_code(404);
+                echo json_encode(["message" => "Task not found"]);
+            }
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(["message" => "Error deleting task", "error" => $e->getMessage()]);
+        }
+        exit;
+    }
+}
+
+// Test endpoint
+if (strpos($request, '/api/test') !== false) {
+    echo json_encode(["message" => "Task Manager API is running (PHP)"]);
+    exit;
+}
+
+// Default 404
+http_response_code(404);
+echo json_encode(["message" => "Endpoint not found", "path" => $request]);
+?>
+
+================================================================================
+ARCHIVO: server/public/api/purge_tasks.php (PURGE LOGIC)
+================================================================================
+<?php
+header("Access-Control-Allow-Origin: *");
+header("Content-Type: application/json; charset=UTF-8");
+header("Access-Control-Allow-Methods: POST, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+$host = 'localhost';
+$db_name = 'task_manager';
+$username = 'root';
+$password = '';
+
+try {
+    $conn = new PDO("mysql:host=$host;dbname=$db_name", $username, $password);
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    // Get input data
+    $data = json_decode(file_get_contents("php://input"));
+    $cutoff_date = isset($data->date) ? $data->date : null;
+
+    if (!$cutoff_date) {
+        throw new Exception("Fecha de corte requerida");
+    }
+
+    // 1. SELECT tasks to be deleted
+    $sqlSelect = "SELECT * FROM tareas 
+                  WHERE estado IN ('Completada', 'Cancelada') 
+                  AND fecha_limite <= :date";
+
+    $stmtSelect = $conn->prepare($sqlSelect);
+    $stmtSelect->bindParam(':date', $cutoff_date);
+    $stmtSelect->execute();
+    $tasks = $stmtSelect->fetchAll(PDO::FETCH_ASSOC);
+
+    if (count($tasks) === 0) {
+        echo json_encode(["message" => "No tasks found to purge", "deleted_count" => 0, "csv_data" => null]);
+        exit();
+    }
+
+    // 2. Generate CSV Content
+    $csv_output = fopen('php://temp', 'r+');
+    fputcsv($csv_output, ['ID', 'Titulo', 'Descripcion', 'Estado', 'Prioridad', 'Fecha Limite', 'Fecha Creacion', 'Responsable', 'Fecha Completada']);
+
+    foreach ($tasks as $task) {
+        fputcsv($csv_output, [
+            $task['id'],
+            $task['titulo'],
+            $task['descripcion'],
+            $task['estado'],
+            $task['prioridad'],
+            $task['fecha_limite'],
+            $task['fecha_creacion'],
+            $task['responsable'],
+            $task['fecha_completada']
+        ]);
+    }
+
+    rewind($csv_output);
+    $csv_content = stream_get_contents($csv_output);
+    fclose($csv_output);
+
+    // 3. DELETE the tasks
+    $sqlDelete = "DELETE FROM tareas 
+                  WHERE estado IN ('Completada', 'Cancelada') 
+                  AND fecha_limite <= :date";
+    $stmtDelete = $conn->prepare($sqlDelete);
+    $stmtDelete->bindParam(':date', $cutoff_date);
+    $stmtDelete->execute();
+    $deleted_count = $stmtDelete->rowCount();
+
+    echo json_encode([
+        "message" => "Purge successful",
+        "deleted_count" => $deleted_count,
+        "csv_data" => base64_encode($csv_content)
+    ]);
+
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(["error" => "Purge failed: " . $e->getMessage()]);
+}
+?>
+
+================================================================================
+ARCHIVO: client/src/App.jsx (REACT FRONTEND LOGIC)
+================================================================================
+import React, { useState, useEffect } from 'react';
+
+const API_URL = 'http://localhost/APP-Prueba/task-manager/server/public/api/tasks';
+const getTomorrowDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+};
+
+const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
+    return `${day}/${month}/${year}`;
+};
+
+const getUrgencyClass = (dueDate, completedAt = null) => {
+    if (!dueDate) return '';
+    const comparisonDate = completedAt ? new Date(completedAt) : new Date();
+    comparisonDate.setHours(0, 0, 0, 0);
+    const due = new Date(dueDate);
+    const [y, m, d] = dueDate.split('-');
+    const dueLocal = new Date(y, m - 1, d);
+
+    if (dueLocal < comparisonDate) return 'task-overdue';
+    if (dueLocal.getTime() === comparisonDate.getTime()) return 'task-due-today';
+
+    const tomorrow = new Date(comparisonDate);
+    tomorrow.setDate(comparisonDate.getDate() + 1);
+
+    if (dueLocal.getTime() === tomorrow.getTime()) return 'task-due-tomorrow';
+
+    return '';
+};
+
+function App() {
+    const [tasks, setTasks] = useState([]);
+    const [statusFilters, setStatusFilters] = useState([]);
+    const [priorityFilters, setPriorityFilters] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
+    const [newTask, setNewTask] = useState({ title: '', notes: '', dueDate: getTomorrowDate(), importance: 'Baja', responsible: 'Cache' });
+    const [showModal, setShowModal] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [currentTaskId, setCurrentTaskId] = useState(null);
+    const [view, setView] = useState('list');
+    const [viewDate, setViewDate] = useState(new Date());
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        fetchTasks();
+    }, []);
+
+    const fetchTasks = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(API_URL);
+            if (!response.ok) throw new Error('Error al cargar tareas');
+            const data = await response.json();
+            const transformedTasks = data.map(task => ({
+                id: task.id,
+                title: task.titulo,
+                notes: task.descripcion || '',
+                dueDate: task.fecha_limite || '',
+                importance: task.prioridad === 'Alta' ? 'High' : 'Low',
+                completed: task.estado === 'Completada',
+                status: task.estado,
+                createdAt: task.fecha_creacion,
+                responsible: task.responsable || 'Cache',
+                completedAt: task.fecha_completada
+            }));
+            setTasks(transformedTasks);
+        } catch (err) {
+            setError(err.message);
+            console.error('Error fetching tasks:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSave = async (e) => {
+        e.preventDefault();
+
+        if (isEditing && currentTaskId) {
+            try {
+                const apiPriority = newTask.importance === 'High' ? 'Alta' : 'Baja';
+
+                const response = await fetch(`${API_URL}/${currentTaskId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        titulo: newTask.title,
+                        descripcion: newTask.notes,
+                        fecha_limite: newTask.dueDate,
+                        prioridad: apiPriority,
+                        responsable: newTask.responsible
+                    })
+                });
+
+                if (!response.ok) throw new Error('Error al actualizar tarea');
+
+                const updated = await response.json();
+
+                setTasks(tasks.map(t =>
+                    t.id === currentTaskId ? {
+                        ...t,
+                        title: updated.titulo,
+                        notes: updated.descripcion || '',
+                        dueDate: updated.fecha_limite || '',
+                        importance: updated.prioridad === 'Alta' ? 'High' : 'Low',
+                        responsible: updated.responsable || 'Cache',
+                        completedAt: updated.fecha_completada,
+                        createdAt: t.createdAt,
+                        completed: t.completed
+                    } : t
+                ));
+
+                resetForm();
+            } catch (err) {
+                alert('Error al actualizar la tarea: ' + err.message);
+            }
+        } else {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        titulo: newTask.title,
+                        descripcion: newTask.notes,
+                        fecha_limite: newTask.dueDate,
+                        prioridad: newTask.importance === 'High' ? 'Alta' : 'Baja',
+                        estado: 'Pendiente'
+                    })
+                });
+
+                if (!response.ok) throw new Error('Error al crear tarea');
+
+                const created = await response.json();
+                const transformedTask = {
+                    id: created.id,
+                    title: created.titulo,
+                    notes: created.descripcion || '',
+                    dueDate: created.fecha_limite || '',
+                    importance: created.prioridad === 'Alta' ? 'High' : 'Low',
+                    completed: created.estado === 'Completada',
+                    status: created.estado,
+                    createdAt: created.fecha_creacion,
+                    responsible: created.responsable || 'Cache',
+                    completedAt: created.fecha_completada
+                };
+
+                setTasks([transformedTask, ...tasks]);
+                resetForm();
+            } catch (err) {
+                alert('Error al crear la tarea: ' + err.message);
+            }
+        }
+    };
+
+    const resetForm = () => {
+        setNewTask({ title: '', notes: '', dueDate: getTomorrowDate(), importance: 'Baja', responsible: 'Cache' });
+        setShowModal(false);
+        setIsEditing(false);
+        setCurrentTaskId(null);
+    };
+
+    const openEditModal = (task) => {
+        setNewTask({
+            title: task.title,
+            notes: task.notes,
+            dueDate: task.dueDate,
+            importance: task.importance,
+            responsible: task.responsible
+        });
+        setCurrentTaskId(task.id);
+        setIsEditing(true);
+        setShowModal(true);
+    };
+
+    const toggleComplete = async (id) => {
+        const task = tasks.find(t => t.id === id);
+        if (!task) return;
+
+        const newState = task.completed ? 'Pendiente' : 'Completada';
+
+        try {
+            const response = await fetch(`${API_URL}/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ estado: newState })
+            });
+
+            if (!response.ok) throw new Error('Error al actualizar tarea');
+
+            setTasks(tasks.map(t =>
+                t.id === id ? {
+                    ...t,
+                    completed: !t.completed,
+                    completedAt: !t.completed ? new Date().toISOString() : null
+                } : t
+            ));
+        } catch (err) {
+            alert('Error al actualizar la tarea: ' + err.message);
+        }
+    };
+
+    const handleCancelOrDelete = async (task) => {
+        if (task.status !== 'Cancelada') {
+            const reason = prompt('¿Deseas cancelar esta tarea? (Opcional: Ingresa el motivo)');
+            if (reason === null) return;
+
+            let newNotes = task.notes || '';
+            if (reason.trim()) {
+                const dateStr = new Date().toLocaleDateString();
+                newNotes = newNotes ? `${newNotes}\n\n[Cancelada ${dateStr}]: ${reason}` : `[Cancelada ${dateStr}]: ${reason}`;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/${task.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        estado: 'Cancelada',
+                        descripcion: newNotes
+                    })
+                });
+
+                if (!response.ok) throw new Error('Error al cancelar tarea');
+
+                setTasks(tasks.map(t =>
+                    t.id === task.id ? {
+                        ...t,
+                        status: 'Cancelada',
+                        completed: false,
+                        notes: newNotes
+                    } : t
+                ));
+            } catch (err) {
+                alert('Error al cancelar la tarea: ' + err.message);
+            }
+        } else {
+            if (!confirm('Esta tarea ya está cancelada. ¿Deseas eliminarla definitivamente?')) return;
+            try {
+                const response = await fetch(`${API_URL}/${task.id}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Error al eliminar tarea');
+
+                setTasks(tasks.filter(t => t.id !== task.id));
+            } catch (err) {
+                alert('Error al eliminar la tarea: ' + err.message);
+            }
+        }
+    };
+
+    const restoreTask = async (id) => {
+        try {
+            const response = await fetch(`${API_URL}/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ estado: 'Pendiente' })
+            });
+
+            if (!response.ok) throw new Error('Error al restaurar tarea');
+
+            setTasks(tasks.map(t =>
+                t.id === id ? { ...t, status: 'Pendiente', completed: false } : t
+            ));
+        } catch (err) {
+            alert('Error al restaurar la tarea: ' + err.message);
+        }
+    };
+
+    const toggleStatusFilter = (status) => {
+        setStatusFilters(prev =>
+            prev.includes(status)
+                ? prev.filter(s => s !== status)
+                : [...prev, status]
+        );
+    };
+
+    const togglePriorityFilter = (priority) => {
+        setPriorityFilters(prev =>
+            prev.includes(priority)
+                ? prev.filter(p => p !== priority)
+                : [...prev, priority]
+        );
+    };
+
+    const purgeTasks = async () => {
+        const password = prompt('🔐 AREA RESTRINGIDA\n\nEsta acción eliminará PERMANENTEMENTE tareas y descargará un respaldo.\n\nIngresa la contraseña para confirmar:');
+
+        if (password !== '1234') {
+            if (password !== null) alert('⛔ Contraseña incorrecta.');
+            return;
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+        const cutoffDate = prompt('📅 Fecha de corte:\nSe eliminarán las tareas COMPLETADAS y CANCELADAS con fecha límite hasta esta fecha (inclusive).', today);
+
+        if (!cutoffDate) return;
+
+        if (!confirm(`⚠️ ¿Confirmar eliminación de tareas hasta ${cutoffDate}?\n\nSe generará un archivo CSV antes de borrar. esta acción NO se puede deshacer.`)) return;
+
+        try {
+            const response = await fetch(`${API_URL.replace('/tasks', '/purge_tasks.php')}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date: cutoffDate })
+            });
+
+            if (!response.ok) throw new Error('Error al purgar tareas');
+
+            const result = await response.json();
+
+            if (result.deleted_count > 0 && result.csv_data) {
+                const csvContent = atob(result.csv_data);
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `backup_tareas_${cutoffDate}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+                alert(`✅ Limpieza completada.\n\n🗑️ Se eliminaron ${result.deleted_count} tareas.\n📥 Respaldo descargado: backup_tareas_${cutoffDate}.csv`);
+            } else {
+                alert('⚠️ No se encontraron tareas para eliminar en ese rango de fechas.');
+            }
+
+            fetchTasks();
+        } catch (err) {
+            alert('Error al purgar: ' + err.message);
+        }
+    };
+
+    const clearFilters = () => {
+        setStatusFilters([]);
+        setPriorityFilters([]);
+        setSearchTerm('');
+        setDateFrom('');
+        setDateTo('');
+    };
+
+    const filteredTasks = tasks.filter(t => {
+        if (statusFilters.length > 0) {
+            const matchesStatus = statusFilters.some(filter => {
+                if (filter === 'Pendiente') return !t.completed && t.status !== 'Cancelada';
+                if (filter === 'Completada') return t.completed;
+                if (filter === 'Cancelada') return t.status === 'Cancelada';
+                if (filter === 'Demorada') {
+                    return !t.completed && t.status !== 'Cancelada' && getUrgencyClass(t.dueDate) === 'task-overdue';
+                }
+                return false;
+            });
+            if (!matchesStatus) return false;
+        }
+
+        if (priorityFilters.length > 0) {
+            const matchesPriority = priorityFilters.some(filter => {
+                if (filter === 'High') return t.importance === 'High';
+                if (filter === 'Low') return t.importance === 'Low';
+                return false;
+            });
+            if (!matchesPriority) return false;
+        }
+
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            const matchesTitle = t.title.toLowerCase().includes(term);
+            const matchesNotes = t.notes && t.notes.toLowerCase().includes(term);
+            const matchesResponsible = t.responsible && t.responsible.toLowerCase().includes(term);
+            if (!matchesTitle && !matchesNotes && !matchesResponsible) return false;
+        }
+
+        if (dateFrom && t.dueDate && t.dueDate < dateFrom) return false;
+        if (dateTo && t.dueDate && t.dueDate > dateTo) return false;
+
+        return true;
+    });
+
+    const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+    const currentYear = viewDate.getFullYear();
+    const currentMonth = viewDate.getMonth();
+    const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+
+    const changeMonth = (increment) => {
+        const newDate = new Date(viewDate);
+        newDate.setMonth(newDate.getMonth() + increment);
+        setViewDate(newDate);
+    };
+
+    return (
+        <div className="container">
+            <h1>Task Manager</h1>
+
+            <div className="tabs">
+                <button onClick={() => setView('list')} disabled={view === 'list'}>List View</button>
+                <button onClick={() => setView('calendar')} disabled={view === 'calendar'}>Calendar View</button>
+            </div>
+
+            {view === 'list' && (
+                <>
+                    <div className="filters-container">
+                        <div className="filters">
+                            <div className="filter-group">
+                                <span className="filter-label">Estado:</span>
+                                <button onClick={() => toggleStatusFilter('Pendiente')} className={statusFilters.includes('Pendiente') ? 'active' : ''}>Pendientes</button>
+                                <button onClick={() => toggleStatusFilter('Demorada')} className={statusFilters.includes('Demorada') ? 'active' : ''}>Demoradas</button>
+                                <button onClick={() => toggleStatusFilter('Completada')} className={statusFilters.includes('Completada') ? 'active' : ''}>Completadas</button>
+                                <button onClick={() => toggleStatusFilter('Cancelada')} className={statusFilters.includes('Cancelada') ? 'active' : ''}>Canceladas</button>
+                            </div>
+                            <div className="filter-divider"></div>
+                            <div className="filter-group">
+                                <span className="filter-label">Importancia:</span>
+                                <button onClick={() => togglePriorityFilter('High')} className={priorityFilters.includes('High') ? 'active' : ''}>Alta</button>
+                                <button onClick={() => togglePriorityFilter('Low')} className={priorityFilters.includes('Low') ? 'active' : ''}>Baja</button>
+                            </div>
+                        </div>
+
+                        <div className="search-filters">
+                            <input
+                                type="text"
+                                placeholder="🔍 Buscar..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="search-input"
+                            />
+                            <div className="date-filters">
+                                <input
+                                    type="date"
+                                    value={dateFrom}
+                                    onChange={(e) => setDateFrom(e.target.value)}
+                                    title="Desde"
+                                    className="date-filter-input"
+                                />
+                                <span>hasta</span>
+                                <input
+                                    type="date"
+                                    value={dateTo}
+                                    onChange={(e) => setDateTo(e.target.value)}
+                                    title="Hasta"
+                                    className="date-filter-input"
+                                />
+                                <button onClick={clearFilters} className="btn-clear-filters" title="Limpiar todos los filtros">
+                                    ✖️ Desfiltrar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {loading ? (
+                        <div className="loading-state">
+                            <div className="spinner"></div>
+                            <p>Cargando tareas...</p>
+                        </div>
+                    ) : error ? (
+                        <div className="error-state">
+                            <p>⚠️ {error}</p>
+                            <button onClick={fetchTasks} className="btn-primary">Reintentar</button>
+                        </div>
+                    ) : (
+                        <div className="task-list">
+                            {filteredTasks.length === 0 ? (
+                                <div className="empty-state">
+                                    <div className="empty-icon">📋</div>
+                                    <h3>No hay tareas</h3>
+                                    <p>Hacé clic en el botón + para agregar tu primera tarea</p>
+                                </div>
+                            ) : (
+                                filteredTasks.map(task => (
+                                    <div key={task.id} className={`task-card importance-${task.importance} ${task.completed ? 'completed' : ''} ${task.status === 'Cancelada' ? 'cancelled' : ''} ${getUrgencyClass(task.dueDate, task.completed ? task.completedAt : null)}`}>
+                                        <div className="task-checkbox" onClick={() => toggleComplete(task.id)}>
+                                            {task.completed ? '✓' : ''}
+                                        </div>
+                                        <div className="task-content">
+                                            <div className="task-main-info">
+                                                <h3>{task.title}</h3>
+                                                {task.notes && <p className="task-notes">{task.notes}</p>}
+                                            </div>
+                                            <div className="task-meta-info">
+                                                <div className="meta-row">
+                                                    <span className={`task-priority priority-${task.importance}`}>
+                                                        {task.importance === 'High' ? 'Alta' : 'Baja'}
+                                                    </span>
+                                                    <span className="task-responsible" title="Responsable">👤 {task.responsible}</span>
+                                                </div>
+                                                <div className="meta-row">
+                                                    {task.dueDate && <span className="task-date" title="Fecha límite">📅 {formatDate(task.dueDate)}</span>}
+                                                </div>
+                                                <div className="meta-row secondary-meta">
+                                                    <span title="Fecha de creación">✨ {formatDate(task.createdAt)}</span>
+                                                    {task.completed && task.completedAt && (
+                                                        <span className="completion-date" title="Fecha de finalización">✅ {formatDate(task.completedAt)}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="task-actions">
+                                            {task.status === 'Cancelada' && (
+                                                <button className="task-restore" onClick={() => restoreTask(task.id)} title="Descancelar / Restaurar">
+                                                    ↩️
+                                                </button>
+                                            )}
+                                            <button className="task-edit" onClick={() => openEditModal(task)} title="Editar" disabled={task.status === 'Cancelada'}>
+                                                ✏️
+                                            </button>
+                                            <button
+                                                className={`task-delete ${task.status === 'Cancelada' ? 'ready-to-delete' : ''}`}
+                                                onClick={() => handleCancelOrDelete(task)}
+                                                title={task.status === 'Cancelada' ? "Eliminar definitivamente" : "Cancelar tarea"}
+                                            >
+                                                {task.status === 'Cancelada' ? '🗑️' : '🚫'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+
+                    <button className="fab" onClick={() => setShowModal(true)} aria-label="Agregar tarea">
+                        +
+                    </button>
+
+                    {showModal && (
+                        <div className="modal-overlay" onClick={resetForm}>
+                            <div className="modal" onClick={(e) => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <h2>{isEditing ? 'Editar Tarea' : 'Nueva Tarea'}</h2>
+                                    <button className="modal-close" onClick={resetForm}>×</button>
+                                </div>
+                                <form onSubmit={handleSave}>
+                                    <input
+                                        type="text"
+                                        placeholder="Título de la tarea"
+                                        value={newTask.title}
+                                        onChange={e => setNewTask({ ...newTask, title: e.target.value })}
+                                        required
+                                        autoFocus
+                                    />
+                                    <input
+                                        type="date"
+                                        value={newTask.dueDate}
+                                        onChange={e => setNewTask({ ...newTask, dueDate: e.target.value })}
+                                        required
+                                    />
+                                    <select value={newTask.importance} onChange={e => setNewTask({ ...newTask, importance: e.target.value })}>
+                                        <option value="Low">Baja Prioridad</option>
+                                        <option value="High">Alta Prioridad</option>
+                                    </select>
+                                    <input
+                                        type="text"
+                                        placeholder="Responsable"
+                                        value={newTask.responsible}
+                                        onChange={e => setNewTask({ ...newTask, responsible: e.target.value })}
+                                        required
+                                    />
+                                    <textarea
+                                        placeholder="Notas (opcional)"
+                                        value={newTask.notes}
+                                        onChange={e => setNewTask({ ...newTask, notes: e.target.value })}
+                                        rows="3"
+                                    />
+                                    <button type="submit" className="btn-primary">
+                                        {isEditing ? 'Guardar Cambios' : 'Agregar Tarea'}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </>
+            )}
+
+            {view === 'calendar' && (
+                <div className="calendar-view">
+                    <div className="calendar-header">
+                        <button onClick={() => changeMonth(-1)}>◀ Prev</button>
+                        <h2>{new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
+                        <button onClick={() => changeMonth(1)}>Next ▶</button>
+                    </div>
+                    <div className="calendar-grid">
+                        {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
+                            const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                            const dayTasks = tasks.filter(t => t.dueDate === dateStr);
+                            const isToday = day === new Date().getDate() && currentMonth === new Date().getMonth() && currentYear === new Date().getFullYear();
+
+                            return (
+                                <div key={day} className={`calendar-day ${isToday ? 'today' : ''}`}>
+                                    <strong>{day}</strong>
+                                    {dayTasks.map(t => (
+                                        <div key={t.id} className={`calendar-task priority-${t.importance}`}>
+                                            {t.title}
+                                        </div>
+                                    ))}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            <button className="btn-purge-hidden" onClick={purgeTasks} title="Limpieza Avanzada">⚙️</button>
+        </div>
+    );
+}
+
+export default App;
+
+================================================================================
+ARCHIVO: client/src/index.css (STYLES)
+================================================================================
+:root {
+  /* Marca - ENSIGNA */
+  --color-primary: #FFDA2A;
+  --color-primary-hover: #E6C426;
+
+  --color-background-dark: #24283A;
+  --color-background-light: #EDEDED;
+  --color-white: #FFFFFF;
+
+  --color-success: #28A745;
+  --color-warning: #FFC107;
+  --color-danger: #DC3545;
+
+  /* Textos */
+  --text-main: #24283A;
+  --text-inverse: #FFFFFF;
+  --text-muted: #666666;
+
+  /* Tipografía */
+  --font-heading: 'Montserrat', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  line-height: 1.6;
+  color: var(--text-main);
+  background-color: var(--color-background-light);
+  margin: 0;
+  min-height: 100vh;
+}
+
+/* Layout */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+  padding-bottom: 100px;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  color: var(--color-background-dark);
+  margin-top: 0;
+}
+
+h1 {
+  font-weight: 900;
+  letter-spacing: -1px;
+  background-color: var(--color-background-dark);
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  text-align: center;
+  color: var(--color-primary);
+  margin-bottom: 1.5rem;
+}
+
+/* Buttons */
+button {
+  cursor: pointer;
+  border: none;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+  padding: 12px 24px;
+  border-radius: 50px;
+}
+
+button[type="submit"],
+.btn-primary {
+  background-color: var(--color-primary);
+  color: var(--color-background-dark);
+  width: 100%;
+  font-size: 1rem;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  justify-content: center;
+}
+
+.tabs button {
+  background: transparent;
+  border: 2px solid var(--color-background-dark);
+  color: var(--color-background-dark);
+  padding: 10px 20px;
+  font-size: 0.9rem;
+}
+
+.tabs button:disabled {
+  background: var(--color-background-dark);
+  color: var(--color-primary);
+  opacity: 1;
+}
+
+/* Filters Container */
+.filters-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  background: var(--color-white);
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.filters {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.filter-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-right: 2px;
+}
+
+.filter-divider {
+  width: 1px;
+  height: 24px;
+  background-color: #e0e0e0;
+  margin: 0 1rem;
+  display: none;
+}
+
+.btn-clear-filters {
+  background: transparent;
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
+  padding: 4px 12px;
+  border-radius: 15px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-clear-filters:hover {
+  background: var(--color-danger);
+  color: white;
+}
+
+@media (min-width: 768px) {
+  .filters {
+    flex-direction: row;
+  }
+
+  .filter-divider {
+    display: block;
+  }
+}
+
+/* Hidden Purge Button */
+.btn-purge-hidden {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  opacity: 0.1;
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 2000;
+  padding: 10px;
+  border-radius: 50%;
+}
+
+.btn-purge-hidden:hover {
+  opacity: 1;
+  background: #f8f9fa;
+  transform: rotate(90deg);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.filters button {
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  background: var(--color-white);
+  color: var(--text-muted);
+  border: 1px solid #e0e0e0;
+  border-radius: 15px;
+  transition: all 0.2s ease;
+}
+
+.filters button:hover {
+  background: var(--color-background-light);
+  transform: translateY(-1px);
+}
+
+.filters button.active {
+  background: var(--color-primary);
+  color: var(--color-background-dark);
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 6px rgba(255, 218, 42, 0.4);
+  font-weight: 700;
+  transform: translateY(-1px);
+}
+
+.search-filters {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  margin-bottom: 0;
+}
+
+.search-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(255, 218, 42, 0.2);
+}
+
+.date-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.date-filter-input {
+  padding: 8px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  margin-bottom: 0;
+}
+
+/* Priority Styles */
+.task-priority.priority-High {
+  background: var(--color-danger);
+  color: var(--color-white);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  padding: 3px 12px;
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+}
+
+/* Task List */
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Task Card */
+.task-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--color-white);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  border-left: 5px solid var(--color-background-dark);
+  transition: all 0.2s ease;
+  min-height: 80px;
+}
+
+.task-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateX(4px);
+}
+
+.task-card.completed {
+  opacity: 0.6;
+}
+
+.task-card.cancelled {
+  opacity: 0.5;
+  background-color: #f8f9fa;
+  border-left-color: #6c757d !important;
+}
+
+.task-card.cancelled .task-main-info h3 {
+  text-decoration: line-through;
+  color: #adb5bd;
+}
+
+.task-card.cancelled .task-checkbox {
+  border-color: #adb5bd;
+  cursor: not-allowed;
+}
+
+.task-card.cancelled .task-priority {
+  background-color: #adb5bd !important;
+  color: white;
+}
+
+.task-card.completed .task-main-info h3 {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.task-card.importance-High {
+  border-left-color: var(--color-primary);
+}
+
+.task-card.importance-Low {
+  border-left-color: var(--color-background-dark);
+}
+
+/* Task Checkbox */
+.task-checkbox {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--color-background-dark);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--color-white);
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.task-checkbox:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.task-card.completed .task-checkbox {
+  background: var(--color-success);
+  border-color: var(--color-success);
+}
+
+/* Task Content Structure */
+.task-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+/* Main Info (Left) */
+.task-main-info {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.task-main-info h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+  text-transform: none;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-notes {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Expand on Hover */
+.task-card:hover .task-main-info h3 {
+  white-space: normal;
+}
+
+.task-card:hover .task-notes {
+  white-space: pre-wrap;
+  overflow: visible;
+}
+
+/* Meta Info (Right) */
+.task-meta-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  min-width: 140px;
+}
+
+.meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.meta-row.secondary-meta {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.task-responsible {
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.completion-date {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.task-priority {
+  padding: 1px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.task-priority.priority-High {
+  background: var(--color-primary);
+  color: var(--color-background-dark);
+}
+
+.task-priority.priority-Low {
+  background: var(--color-background-dark);
+  color: var(--color-white);
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--color-white);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--color-background-dark);
+}
+
+.empty-state p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+/* Floating Action Button */
+.fab {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--color-background-dark);
+  font-size: 2.5rem;
+  font-weight: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  padding: 0;
+  line-height: 1;
+}
+
+.fab:hover {
+  background: var(--color-primary-hover);
+  transform: scale(1.1);
+}
+
+.fab:active {
+  transform: scale(0.95);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(36, 40, 58, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.modal {
+  background: var(--color-white);
+  padding: 2rem;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  border-bottom: 3px solid var(--color-primary);
+  padding-bottom: 0.25rem;
+}
+
+.modal-close {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 1.5rem;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 50%;
+}
+
+.modal-close:hover {
+  background: var(--color-background-light);
+  color: var(--color-background-dark);
+  transform: none;
+}
+
+/* Form Elements */
+input,
+select,
+textarea {
+  display: block;
+  width: 100%;
+  padding: 14px 16px;
+  margin-bottom: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Calendar View */
+.calendar-view h2 {
+  color: var(--color-background-dark);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+}
+
+.calendar-day {
+  background: var(--color-white);
+  padding: 10px;
+  min-height: 100px;
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+}
+
+.calendar-day strong {
+  color: var(--color-background-dark);
+  display: block;
+  margin-bottom: 5px;
+}
+
+.calendar-task {
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-bottom: 2px;
+  color: var(--text-inverse);
+  font-weight: 500;
+}
+
+.calendar-task.priority-High {
+  background-color: var(--color-primary);
+  color: var(--color-background-dark);
+}
+
+.calendar-task.priority-Low {
+  background-color: var(--color-background-dark);
+  color: var(--color-white);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .container {
+    padding: 1rem;
+    padding-bottom: 100px;
+  }
+
+  h1 {
+    font-size: 1.25rem;
+    padding: 1rem;
+  }
+
+  .tabs {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .tabs button {
+    width: 100%;
+  }
+
+  .calendar-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .fab {
+    bottom: 1.5rem;
+    right: 1.5rem;
+    width: 56px;
+    height: 56px;
+    font-size: 2rem;
+  }
+}
+
+/* Loading State */
+.loading-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--color-white);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--color-background-light);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  margin: 0 auto 1rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-state p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+/* Error State */
+.error-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: var(--color-white);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  border: 2px solid var(--color-danger);
+}
+
+.error-state p {
+  margin: 0 0 1rem 0;
+  color: var(--color-danger);
+  font-weight: 500;
+}
+
+.error-state .btn-primary {
+  width: auto;
+  display: inline-block;
+}
+
+/* Delete Button */
+.task-restore {
+  background: transparent;
+  padding: 8px;
+  font-size: 1.2rem;
+  opacity: 0.6;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  border-radius: 50%;
+  color: var(--color-primary);
+}
+
+.task-restore:hover {
+  opacity: 1;
+  background: rgba(255, 218, 42, 0.1);
+  transform: translateY(-2px);
+}
+
+.task-delete {
+  background: transparent;
+  padding: 8px;
+  font-size: 1.2rem;
+  opacity: 0.5;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  border-radius: 50%;
+}
+
+.task-delete:hover {
+  opacity: 1;
+  background: rgba(220, 53, 69, 0.1);
+  transform: none;
+}
+
+.task-delete.ready-to-delete {
+  opacity: 1;
+  color: var(--color-danger);
+  background: rgba(220, 53, 69, 0.1);
+  animation: pulse 2s infinite;
+}
+
+.task-delete.ready-to-delete:hover {
+  background: var(--color-danger);
+  color: white;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.task-card:hover .task-delete {
+  opacity: 0.8;
+}
+
+/* Urgency Coloring */
+.task-card.task-overdue {
+  background-color: #ffebee;
+  border-left: 5px solid #ef5350;
+}
+
+.task-card.task-due-today {
+  background-color: #fff3e0;
+  border-left: 5px solid #ffa726;
+}
+
+.task-card.task-due-tomorrow {
+  background-color: #fffde7;
+  border-left: 5px solid #ffee58;
+}
+
+/* Edit Button Styles */
+.task-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.task-edit {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  padding: 8px;
+}
+
+.task-edit:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 50%;
+}
+
+/* Calendar Today Highlight */
+.calendar-day.today {
+  background-color: #ffe0b2;
+  border: 2px solid #ff9800;
+  font-weight: bold;
+}
+
+/* Calendar Header Navigation */
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  text-transform: capitalize;
+}
+
+.calendar-header button {
+  background: var(--color-white);
+  border: 1px solid #e0e0e0;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  color: var(--text-muted);
+}
+
+.calendar-header button:hover {
+  background: var(--color-background-light);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
