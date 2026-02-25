@@ -1,0 +1,21 @@
+{
+    "name": "ERP Spot - Recursos Globales",
+    "short_name": "RG Spot",
+    "start_url": "/APP-Prueba/modules/spot/presentation/index.php",
+    "display": "standalone",
+    "background_color": "#0d1b2a",
+    "theme_color": "#64b5f6",
+    "icons": [
+        {
+            "src": "/APP-Prueba/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/APP-Prueba/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

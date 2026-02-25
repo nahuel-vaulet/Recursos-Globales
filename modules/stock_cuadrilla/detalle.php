@@ -53,6 +53,48 @@ foreach ($movimientos as $mov) {
     if ($mov['tipo_movimiento'] == 'Consumo_Cuadrilla_Obra')
         $total_consumos++;
 }
+// 5. Datos del Vehículo Asignado + Combustible Hoy
+$vehiculo = null;
+$litros_hoy = 0;
+if (!empty($cuadrilla['id_vehiculo_asignado'])) {
+    $stmt_veh = $pdo->prepare("SELECT * FROM vehiculos WHERE id_vehiculo = ?");
+    $stmt_veh->execute([$cuadrilla['id_vehiculo_asignado']]);
+    $vehiculo = $stmt_veh->fetch(PDO::FETCH_ASSOC);
+
+    // Calcular consumo de hoy
+    $today = date('Y-m-d');
+    $sql_fuel = "
+        SELECT SUM(litros) FROM (
+            SELECT litros FROM combustibles_despachos WHERE DATE(fecha_hora) = ? AND id_vehiculo = ?
+            UNION ALL
+            SELECT litros FROM combustibles_cargas WHERE DATE(fecha_hora) = ? AND destino_tipo = 'vehiculo' AND id_vehiculo = ?
+        ) as combined_fuel";
+    $stmt_fuel = $pdo->prepare($sql_fuel);
+    $stmt_fuel->execute([$today, $cuadrilla['id_vehiculo_asignado'], $today, $cuadrilla['id_vehiculo_asignado']]);
+    $litros_hoy = $stmt_fuel->fetchColumn() ?: 0;
+}
+
+// 6. Personal de la Cuadrilla
+$stmt_pers = $pdo->prepare("SELECT * FROM personal WHERE id_cuadrilla = ? AND estado_documentacion != 'Incompleto' ORDER BY rol");
+$stmt_pers->execute([$id_cuadrilla]);
+$personal = $stmt_pers->fetchAll(PDO::FETCH_ASSOC);
+
+// 7. Herramientas Asignadas
+$stmt_tools = $pdo->prepare("SELECT * FROM herramientas WHERE id_cuadrilla_asignada = ? AND estado = 'Asignada'");
+$stmt_tools->execute([$id_cuadrilla]);
+$herramientas = $stmt_tools->fetchAll(PDO::FETCH_ASSOC);
+
+// 8. Conteo de ODTs Pendientes (Para el botón)
+// Filtramos por estados activos
+$sql_odts_pending = "
+    SELECT COUNT(DISTINCT o.id_odt) 
+    FROM odt_maestro o
+    JOIN programacion_semanal ps ON o.id_odt = ps.id_odt
+    WHERE ps.id_cuadrilla = ? 
+    AND o.estado_gestion IN ('Programado', 'Ejecución', 'Retrabajo', 'Postergado')";
+$stmt_odt = $pdo->prepare($sql_odts_pending);
+$stmt_odt->execute([$id_cuadrilla]);
+$odts_pendientes = $stmt_odt->fetchColumn();
 ?>
 
 <div class="container-fluid" style="padding: 0 20px;">
@@ -123,6 +165,143 @@ foreach ($movimientos as $mov) {
                 <span class="metric-label">Consumos en Obra</span>
             </div>
         </div>
+    </div>
+
+    <!-- NEW: Resource Cards (Vehicle, Personnel, Tools) -->
+    <div class="resource-grid"
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 25px;">
+
+        <!-- 1. Vehículo -->
+        <div class="card" style="padding: 0;">
+            <div class="panel-header"
+                style="background: rgba(33, 150, 243, 0.1); border-bottom: 1px solid rgba(33, 150, 243, 0.2);">
+                <h3 style="color: #1976d2;"><i class="fas fa-truck"></i> Vehículo Asignado</h3>
+            </div>
+            <div style="padding: 15px;">
+                <?php if ($vehiculo): ?>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <div>
+                            <div style="font-size: 1.2em; font-weight: bold; color: var(--text-primary);">
+                                <?php echo htmlspecialchars($vehiculo['marca'] . ' ' . $vehiculo['modelo']); ?>
+                            </div>
+                            <div style="color: var(--text-secondary); font-family: monospace; font-size: 1.1em;">
+                                <?php echo htmlspecialchars($vehiculo['patente']); ?>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="badge-fuel <?php echo $litros_hoy > 0 ? 'success' : 'danger'; ?>"
+                                style="font-size: 0.9em;">
+                                <i class="fas fa-gas-pump"></i> <?php echo number_format($litros_hoy, 1); ?> L
+                            </span>
+                            <div style="font-size: 0.75em; color: #888; margin-top: 4px;">Cargado Hoy</div>
+                        </div>
+                    </div>
+
+                    <div class="list-group-simple">
+                        <div class="list-item">
+                            <span><i class="fas fa-tachometer-alt"></i> KM Actual</span>
+                            <strong><?php echo number_format($vehiculo['km_actual'] ?? 0, 0, ',', '.'); ?> km</strong>
+                        </div>
+                        <div class="list-item">
+                            <span><i class="fas fa-wrench"></i> Próximo Service</span>
+                            <strong><?php echo number_format($vehiculo['proximo_service_km'] ?? 0, 0, ',', '.'); ?>
+                                km</strong>
+                        </div>
+                        <div class="list-item">
+                            <span><i class="fas fa-info-circle"></i> Estado</span>
+                            <strong><?php echo $vehiculo['estado']; ?></strong>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <div class="empty-state-mini">
+                        <i class="fas fa-ban"></i>
+                        <p>Sin vehículo asignado</p>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- 2. Personal -->
+        <div class="card" style="padding: 0;">
+            <div class="panel-header"
+                style="background: rgba(76, 175, 80, 0.1); border-bottom: 1px solid rgba(76, 175, 80, 0.2);">
+                <h3 style="color: #388e3c;"><i class="fas fa-users"></i> Personal (<?php echo count($personal); ?>)</h3>
+            </div>
+            <div class="custom-scrollbar" style="max-height: 250px; overflow-y: auto;">
+                <?php if (empty($personal)): ?>
+                    <div class="empty-state-mini">
+                        <i class="fas fa-user-slash"></i>
+                        <p>Sin personal asignado</p>
+                    </div>
+                <?php else: ?>
+                    <ul class="simple-list">
+                        <?php foreach ($personal as $p): ?>
+                            <li>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div class="avatar-circle"><?php echo strtoupper(substr($p['nombre_apellido'], 0, 1)); ?>
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 500;"><?php echo htmlspecialchars($p['nombre_apellido']); ?>
+                                        </div>
+                                        <small style="color: #666;"><?php echo $p['rol']; ?></small>
+                                    </div>
+                                </div>
+                                <?php if ($p['rol'] == 'Chofer'): ?>
+                                    <i class="fas fa-steering-wheel" title="Chofer" style="color: var(--text-muted);"></i>
+                                <?php endif; ?>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- 3. Herramientas -->
+        <div class="card" style="padding: 0;">
+            <div class="panel-header"
+                style="background: rgba(255, 152, 0, 0.1); border-bottom: 1px solid rgba(255, 152, 0, 0.2);">
+                <h3 style="color: #f57c00;"><i class="fas fa-tools"></i> Herramientas
+                    (<?php echo count($herramientas); ?>)</h3>
+            </div>
+            <div class="custom-scrollbar" style="max-height: 250px; overflow-y: auto;">
+                <?php if (empty($herramientas)): ?>
+                    <div class="empty-state-mini">
+                        <i class="fas fa-toolbox"></i>
+                        <p>Sin herramientas asignadas</p>
+                    </div>
+                <?php else: ?>
+                    <ul class="simple-list">
+                        <?php foreach ($herramientas as $h): ?>
+                            <li>
+                                <div>
+                                    <div style="font-weight: 500;"><?php echo htmlspecialchars($h['nombre']); ?></div>
+                                    <small style="color: #888;">S/N: <?php echo htmlspecialchars($h['numero_serie']); ?></small>
+                                </div>
+                                <span class="badge-status <?php echo $h['estado'] == 'Asignada' ? 'active' : 'inactive'; ?>"
+                                    style="font-size: 0.7em;">
+                                    <?php echo $h['estado']; ?>
+                                </span>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ODTs Pendientes CTA -->
+    <div style="margin-bottom: 25px;">
+        <a href="../odt/index.php?cuadrilla=<?php echo urlencode($cuadrilla['nombre_cuadrilla']); ?>&estado=&back_to_squad=<?php echo $id_cuadrilla; ?>"
+            class="btn btn-primary"
+            style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; font-size: 1.1em; background: linear-gradient(145deg, #1565c0, #0d47a1);">
+            <span>
+                <i class="fas fa-clipboard-list"></i> Ver Gestión de ODTs / Trabajos Pendientes
+            </span>
+            <span style="background: rgba(255,255,255,0.2); padding: 2px 10px; border-radius: 15px; font-size: 0.9em;">
+                <?php echo $odts_pendientes; ?> Pendientes
+            </span>
+        </a>
     </div>
 
     <!-- Content Grid: Stock + Movements -->
@@ -351,6 +530,78 @@ foreach ($movimientos as $mov) {
 
     .text-right {
         text-align: right;
+    }
+
+    /* New Styles for Resource Cards */
+    .simple-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .simple-list li {
+        padding: 12px 15px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .simple-list li:last-child {
+        border-bottom: none;
+    }
+
+    .avatar-circle {
+        width: 35px;
+        height: 35px;
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.9em;
+    }
+
+    .list-group-simple .list-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px dashed rgba(0, 0, 0, 0.1);
+        font-size: 0.9em;
+    }
+
+    .list-group-simple .list-item:last-child {
+        border-bottom: none;
+    }
+
+    .list-group-simple .list-item span {
+        color: var(--text-secondary);
+    }
+
+    .badge-fuel {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: bold;
+        color: white;
+    }
+
+    .badge-fuel.success {
+        background: #4caf50;
+    }
+
+    .badge-fuel.danger {
+        background: #f44336;
+    }
+
+    [data-theme="dark"] .simple-list li {
+        border-bottom-color: rgba(255, 255, 255, 0.05);
+    }
+
+    [data-theme="dark"] .avatar-circle {
+        background: #333;
+        color: #ddd;
     }
 </style>
 

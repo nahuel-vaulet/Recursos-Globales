@@ -1,0 +1,72 @@
+<!-- Stock / Materiales List View -->
+<div class="view-header">
+    <h1>📦 Stock y Materiales</h1>
+    <div class="view-actions">
+        <button class="btn btn-primary" onclick="stock_showModal()">+ Nuevo Material</button>
+    </div>
+</div>
+
+<div class="filter-bar">
+    <input type="text" id="stockSearch" placeholder="Buscar material..." class="input" />
+    <select id="stockFilterAlerta" class="input">
+        <option value="">Todas</option>
+        <option value="1">⚠️ Stock bajo</option>
+    </select>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="data-table" id="stockTable">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Material</th>
+                    <th>Unidad</th>
+                    <th>Stock Actual</th>
+                    <th>Stock Mín.</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="stockTableBody">
+                <tr>
+                    <td colspan="7" class="text-center">
+                        <div class="loading-spinner"></div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="stockModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="stockModalTitle">Nuevo Material</h3>
+            <button class="modal-close" onclick="stock_closeModal()">✕</button>
+        </div>
+        <form id="stockForm" onsubmit="stock_save(event)">
+            <input type="hidden" id="stockFormId" />
+            <div class="form-group"><label>Nombre *</label><input type="text" id="stockFormNombre" class="input"
+                    required /></div>
+            <div class="form-group"><label>Código</label><input type="text" id="stockFormCodigo" class="input" /></div>
+            <div class="form-row">
+                <div class="form-group"><label>Unidad</label><input type="text" id="stockFormUnidad" class="input"
+                        value="UND" /></div>
+                <div class="form-group"><label>Categoría</label><input type="text" id="stockFormCategoria"
+                        class="input" /></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Stock Actual</label><input type="number" id="stockFormStockActual"
+                        class="input" step="0.01" value="0" /></div>
+                <div class="form-group"><label>Stock Mínimo</label><input type="number" id="stockFormStockMinimo"
+                        class="input" step="0.01" value="0" /></div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn" onclick="stock_closeModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>

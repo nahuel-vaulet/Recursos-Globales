@@ -1,0 +1,56 @@
+<!-- Cuadrillas List View -->
+<div class="view-header">
+    <h1>👷 Cuadrillas</h1>
+    <div class="view-actions">
+        <button class="btn btn-primary" onclick="cuad_showModal()">+ Nueva Cuadrilla</button>
+    </div>
+</div>
+<div class="filter-bar">
+    <input type="text" id="cuadSearch" placeholder="Buscar cuadrilla..." class="input" />
+</div>
+<div class="card">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Cuadrilla</th>
+                    <th>Especialidad</th>
+                    <th>Color</th>
+                    <th>ODTs Hoy</th>
+                    <th>ODTs Mañana</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="cuadTableBody">
+                <tr>
+                    <td colspan="6" class="text-center">
+                        <div class="loading-spinner"></div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div id="cuadModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="cuadModalTitle">Nueva Cuadrilla</h3><button class="modal-close"
+                onclick="cuad_closeModal()">✕</button>
+        </div>
+        <form id="cuadForm" onsubmit="cuad_save(event)">
+            <input type="hidden" id="cuadFormId" />
+            <div class="form-group"><label>Nombre *</label><input type="text" id="cuadFormNombre" class="input"
+                    required /></div>
+            <div class="form-row">
+                <div class="form-group"><label>Especialidad</label><input type="text" id="cuadFormEspec"
+                        class="input" /></div>
+                <div class="form-group"><label>Color</label><input type="color" id="cuadFormColor" class="input"
+                        value="#607D8B" /></div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn" onclick="cuad_closeModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>

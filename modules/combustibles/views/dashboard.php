@@ -132,6 +132,76 @@ try {
             </div>
         <?php endforeach; ?>
     </div>
+    <!-- SQUADS PANEL (Integrated) -->
+    <div class="panel-squads-container"
+        style="border-top: 1px solid rgba(0,0,0,0.1); margin-top: 20px; padding-top: 20px; padding-left: 15px; padding-right: 15px;">
+        <div class="panel-header-squads" style="margin-bottom: 15px;">
+            <h3 style="font-size: 1.1rem; color: var(--text-primary); margin: 0;">
+                <i class="fas fa-shipping-fast"></i> En Tránsito / Cuadrillas (<?php echo count($squads_data); ?>
+                Activas)
+            </h3>
+        </div>
+
+        <div class="squads-carousel custom-scrollbar">
+            <?php if (empty($squads_data)): ?>
+                <div class="empty-state">
+                    <i class="fas fa-check-circle"></i> Todo el material está en depósito central.
+                </div>
+            <?php endif; ?>
+
+            <?php foreach ($squads_data as $id_cuadrilla => $squad): ?>
+                <div class="squad-card fade-in">
+                    <div class="squad-card-header">
+                        <div><i class="fas fa-hard-hat"></i> <?php echo $squad['name']; ?></div>
+                        <a href="../stock_cuadrilla/detalle.php?id=<?php echo $id_cuadrilla; ?>" class="btn-detail"
+                            title="Ver Detalle">
+                            <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    </div>
+
+                    <?php if ($squad['vehicle']): ?>
+                        <div
+                            style="padding: 8px 15px; background: rgba(0,0,0,0.02); border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 0.85em; display: flex; justify-content: space-between; align-items: center;">
+                            <span title="Vehículo Asignado" style="color: #666;">
+                                <i class="fas fa-truck" style="margin-right: 4px;"></i> <?php echo $squad['vehicle']; ?>
+                            </span>
+
+                            <?php
+                            if ($squad['fuel_today'] > 0):
+                                $fClass = 'success'; // > 15 (Green)
+                                if ($squad['fuel_today'] < 15)
+                                    $fClass = 'warning'; // < 15 (Yellow)
+                                if ($squad['fuel_today'] < 10)
+                                    $fClass = 'danger';  // < 10 (Red)
+                                ?>
+                                <span class="badge-fuel <?php echo $fClass; ?>" title="Carga Diaria">
+                                    <i class="fas fa-gas-pump"></i> <?php echo number_format($squad['fuel_today'], 1); ?> L
+                                </span>
+                            <?php else: ?>
+                                <span class="badge-fuel danger" title="Sin carga registrada hoy">
+                                    <i class="fas fa-gas-pump"></i> 0.0 L
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="squad-card-body custom-scrollbar">
+                        <table class="mini-table">
+                            <?php foreach ($squad['items'] as $mat): ?>
+                                <tr>
+                                    <td><?php echo $mat['material']; ?></td>
+                                    <td class="text-right">
+                                        <strong><?php echo number_format($mat['cantidad'], 2); ?></strong>
+                                        <?php echo $mat['unidad_medida']; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </table>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
 </div>
 
 <!-- Modal Combustibles (Loader) -->
@@ -148,263 +218,20 @@ try {
     </div>
 </div>
 
-<!-- TRANSFER MODAL -->
-<div id="fuelTransferModal" class="modal-overlay" data-active-tank-id="">
-    <div class="modal-content"
-        style="width: 450px; background: var(--bg-card); color: var(--text-primary); padding: 25px; border-radius: 12px; border: 1px solid rgba(100, 181, 246, 0.2);">
-
-        <h3
-            style="margin-top: 0; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;">
-            <i class="fas fa-share" style="color: var(--accent-primary);"></i> Transferencia Rápida
-        </h3>
-
-        <form id="formFuelTransfer">
-            <input type="hidden" name="fecha_hora" value="<?php echo date('Y-m-d\TH:i'); ?>">
-            <input type="hidden" name="odometro_actual" value="0">
-
-            <div class="row" style="display:flex; gap:10px; margin-bottom: 10px;">
-                <div class="col" style="flex:1;">
-                    <label style="font-size:0.85em; color:var(--text-secondary);">Origen</label>
-                    <div style="font-weight:bold; padding: 8px; background: rgba(0,0,0,0.05); border-radius: 6px;">
-                        Oficina Central</div>
-                </div>
-                <div class="col" style="flex:1;">
-                    <label style="font-size:0.85em; color:var(--text-secondary);">Tanque Salida</label>
-                    <div id="fuelModalTankName"
-                        style="font-weight:bold; color: var(--accent-primary); padding: 8px; background: rgba(0,0,0,0.05); border-radius: 6px;">
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Destino (Cuadrilla)</label>
-                <select name="id_cuadrilla" id="fuelModalCuadrilla" required class="form-control"
-                    onchange="onFuelModalCuadrillaChange()">
-                    <option value="">Seleccione Cuadrilla...</option>
-                    <?php foreach ($cuadrillas as $c): ?>
-                        <option value="<?php echo $c['id_cuadrilla']; ?>">
-                            <?php echo htmlspecialchars($c['nombre_cuadrilla']); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Vehículo</label>
-                <select name="id_vehiculo" id="fuelModalVehiculo" required class="form-control">
-                    <option value="">Seleccione Vehículo...</option>
-                    <?php foreach ($vehiculos as $v): ?>
-                        <option value="<?php echo $v['id_vehiculo']; ?>">
-                            <?php echo htmlspecialchars($v['marca'] . ' ' . $v['modelo'] . ' (' . $v['patente'] . ')'); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Chofer / Responsable</label>
-                <select name="usuario_conductor" id="fuelModalConductor" required class="form-control">
-                    <option value="">Seleccione Chofer...</option>
-                    <?php foreach ($personal as $p): ?>
-                        <option value="<?php echo htmlspecialchars($p['nombre_apellido']); ?>">
-                            <?php echo htmlspecialchars($p['nombre_apellido']); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Quien Entrega (Despachante)</label>
-                <select name="usuario_despacho" id="fuelModalDespachante" class="form-control">
-                    <option value="<?php echo $_SESSION['usuario_id'] ?? ''; ?>">Yo
-                        (<?php echo $_SESSION['usuario_nombre'] ?? 'Usuario'; ?>)</option>
-                    <?php foreach ($personal as $p): ?>
-                        <option value="<?php echo $p['id_personal']; ?>">
-                            <?php echo htmlspecialchars($p['nombre_apellido']); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Cantidad (Máx: <span id="fuelModalMaxQty"></span> L)</label>
-                <input type="number" step="0.01" name="litros" id="fuelModalQty" required class="form-control"
-                    placeholder="0.00">
-            </div>
-
-            <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 10px; margin-top:20px;">
-                <button type="button" class="btn btn-outline-secondary"
-                    onclick="closeFuelTransferModal()">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="btnConfirmFuelTransfer">Confirmar</button>
-            </div>
-        </form>
-    </div>
-</div>
-
+<!-- REDIRECT TANK MOVER TO UNIFIED FUEL FLOW -->
 <script>
-    (function () {
-        // Wait for DOM to be ready
-        document.addEventListener('DOMContentLoaded', function () {
-            initTransferButtons();
-        });
-
-        // Also try immediately in case DOM is already loaded
-        if (document.readyState !== 'loading') {
-            initTransferButtons();
-        }
-
-        function initTransferButtons() {
-            // Attach click handlers to all "Mover" buttons
-            var buttons = document.querySelectorAll('.btn-mover-tank');
-            buttons.forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    var tankId = this.getAttribute('data-tank-id');
-                    var tankName = this.getAttribute('data-tank-name');
-                    var tankMax = this.getAttribute('data-tank-max');
-                    var tankType = this.getAttribute('data-tank-type');
-
-                    console.log('Mover clicked:', tankId, tankName, tankMax, tankType);
-                    openFuelTransferModalWithData(tankId, tankName, tankMax, tankType);
-                });
-            });
-
-            // Attach confirm button handler
-            var confirmBtn = document.getElementById('btnConfirmFuelTransfer');
-            if (confirmBtn) {
-                confirmBtn.addEventListener('click', function () {
-                    submitFuelTransferForm();
-                });
-            }
-        }
-
-        window.openFuelTransferModalWithData = function (id, name, max, type) {
-            if (!id) {
-                alert('Error: No se pudo obtener el ID del tanque.');
-                return;
-            }
-
-            var modal = document.getElementById('fuelTransferModal');
-            var form = document.getElementById('formFuelTransfer');
-
-            // Store the Tank ID and Type in the modal's data attribute
-            modal.setAttribute('data-active-tank-id', id);
-            modal.setAttribute('data-tank-type', type || ''); // Store Type
-
-            // Reset Form
-            form.reset();
-
-            // Clear Vehicle and Driver selects to force fresh filtering
-            document.getElementById('fuelModalVehiculo').innerHTML = '<option value="">-- Seleccione Cuadrilla Primero --</option>';
-            document.getElementById('fuelModalConductor').innerHTML = '<option value="">-- Seleccione Cuadrilla Primero --</option>';
-
-            // Update UI
-            document.getElementById('fuelModalTankName').textContent = name + ' (' + (type || '') + ')';
-            document.getElementById('fuelModalMaxQty').textContent = max;
-            document.getElementById('fuelModalQty').max = max;
-
-            // Show Modal
-            modal.style.display = 'block';
-
-            console.log('Fuel Modal opened with Tank ID:', id, 'Type:', type);
-        };
-
-        window.closeFuelTransferModal = function () {
-            var modal = document.getElementById('fuelTransferModal');
-            modal.style.display = 'none';
-            modal.setAttribute('data-active-tank-id', '');
-        };
-
-        window.submitFuelTransferForm = function () {
-            var form = document.getElementById('formFuelTransfer');
-            var modal = document.getElementById('fuelTransferModal');
-
-            // Validate form
-            if (!form.reportValidity()) {
-                return;
-            }
-
-            // FINAL BLOCKING CHECK
-            if (validateTransferFuel() === false) {
-                return; // Stop submission if validation fails
-            }
-
-            // Get the Tank ID from the modal's data attribute
-            var tankId = modal.getAttribute('data-active-tank-id');
-
-            console.log('Submitting Fuel with Tank ID:', tankId);
-
-            if (!tankId) {
-                alert('Error: No se puede identificar el tanque de origen. Por favor cierre y vuelva a intentar.');
-                return;
-            }
-
-            var formData = new FormData(form);
-            formData.append('id_tanque', tankId);
-
-            var btn = document.getElementById('btnConfirmFuelTransfer');
-            var originalText = btn.textContent;
-            btn.disabled = true;
-            btn.textContent = 'Procesando...';
-
-            fetch('/APP-Prueba/modules/combustibles/api/save_despacho.php', {
-                method: 'POST',
-                body: formData
-            })
-                .then(function (response) { return response.json(); })
-                .then(function (data) {
-                    btn.disabled = false;
-                    btn.textContent = originalText;
-
-                    if (data.success) {
-                        closeFuelTransferModal();
-                        // Open printable remito in new window
-                        if (data.id_despacho) {
-                            window.open('/APP-Prueba/modules/combustibles/views/print_remito.php?id=' + data.id_despacho, '_blank');
-                        }
-                        alert('Transferencia Exitosa. Se ha generado el remito.');
-                        location.reload();
-                    } else {
-                        alert('Error del Servidor: ' + data.error);
-                    }
-                })
-                .catch(function (error) {
-                    console.error('Error:', error);
-                    btn.disabled = false;
-                    btn.textContent = originalText;
-                    alert('Error de conexión.');
-                });
-        };
-
-        window.onFuelModalCuadrillaChange = function () {
-            var idCuadrilla = document.getElementById('fuelModalCuadrilla').value;
-            var data = window.FUEL_DATA || { cuadrillas: [], personal: [], vehiculos: [] };
-
-            var squad = data.cuadrillas.find(function (c) { return c.id_cuadrilla == idCuadrilla; });
-
-            if (squad) {
-                var val = squad.id_vehiculo_asignado || squad.id_vehiculo;
-                var sel = document.getElementById('fuelModalVehiculo');
-                if (val && sel && sel.querySelector('option[value="' + val + '"]')) {
-                    sel.value = val;
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.btn-mover-tank').forEach(btn => {
+            btn.onclick = function () {
+                const tankId = this.getAttribute('data-tank-id');
+                if (typeof openFuelTransferModal === 'function') {
+                    openFuelTransferModal(tankId);
+                } else {
+                    console.error('Unified Fuel Modal function not found.');
                 }
-            }
-            var driver = data.personal.find(function (p) { return p.id_cuadrilla == idCuadrilla; });
-            if (driver) {
-                var sel = document.getElementById('fuelModalConductor');
-                if (sel && sel.querySelector('option[value="' + driver.nombre_apellido + '"]')) {
-                    sel.value = driver.nombre_apellido;
-                }
-            }
-        };
-
-        // Close on outside click
-        window.addEventListener('click', function (event) {
-            var modal = document.getElementById('fuelTransferModal');
-            if (event.target === modal) {
-                closeFuelTransferModal();
-            }
+            };
         });
-    })();
+    });
 </script>
 
 <script>
@@ -644,8 +471,8 @@ try {
             if (fuelTanque && fuelVehiculo) {
                 var t = fuelTanque.toLowerCase();
                 var v = fuelVehiculo.toLowerCase();
-                if (t.includes('gasoil') && v.includes('diesel')) t = 'diesel';
-                if (v.includes('gasoil') && t.includes('diesel')) v = 'diesel';
+                if (t.includes('gasoil') || t.includes('diesel')) t = 'diesel';
+                if (v.includes('gasoil') || v.includes('diesel')) v = 'diesel';
                 if (t.includes('nafta') && v.includes('nafta')) { t = 'nafta'; v = 'nafta'; }
 
                 if (t !== v) {

@@ -1,0 +1,20 @@
+<!-- Calendario View -->
+<div class="view-header">
+    <h1>📅 Calendario de ODTs</h1>
+    <div class="view-actions">
+        <button class="btn" onclick="cal_prev()">◀ Anterior</button>
+        <span id="calTitle" style="font-size:1.2em;font-weight:600;"></span>
+        <button class="btn" onclick="cal_next()">Siguiente ▶</button>
+    </div>
+</div>
+<div class="card" style="padding:16px;">
+    <div id="calGrid" class="calendar-grid"></div>
+</div>
+<div id="calModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="calModalTitle">Detalle del día</h3><button class="modal-close" onclick="cal_closeModal()">✕</button>
+        </div>
+        <div id="calModalBody"></div>
+    </div>
+</div>

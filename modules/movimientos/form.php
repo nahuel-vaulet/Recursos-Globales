@@ -286,14 +286,27 @@ $proveedores_json = json_encode($proveedores);
         <!-- Usuarios -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
             <div>
-                <label>Despachado Por</label>
-                <input type="text" name="usuario_despacho" placeholder="Responsable de Entrega" value="Almacén"
-                    class="form-control-sm" style="width: 100%;">
+                <label>Despachado Por (Proveedor / Empresa)</label>
+                <select name="usuario_despacho" class="form-control-sm" style="width: 100%;" required>
+                    <option value="">Seleccione Proveedor...</option>
+                    <option value="Oficina Central">Oficina Central</option>
+                    <?php foreach ($proveedores as $p): ?>
+                        <option value="<?= htmlspecialchars($p['razon_social']) ?>">
+                            <?= htmlspecialchars($p['razon_social']) ?></option>
+                    <?php endforeach; ?>
+                </select>
             </div>
             <div>
-                <label>Recibido Por</label>
-                <input type="text" name="usuario_recepcion" placeholder="Responsable de Recepción"
-                    class="form-control-sm" style="width: 100%;">
+                <label>Recibido Por (Personal)</label>
+                <select name="usuario_recepcion" class="form-control-sm" style="width: 100%;" required>
+                    <option value="">Seleccione Personal...</option>
+                    <?php
+                    $personal = $pdo->query("SELECT id_personal, nombre_apellido FROM personal ORDER BY nombre_apellido ASC")->fetchAll(PDO::FETCH_ASSOC);
+                    foreach ($personal as $per): ?>
+                        <option value="<?= htmlspecialchars($per['nombre_apellido']) ?>">
+                            <?= htmlspecialchars($per['nombre_apellido']) ?></option>
+                    <?php endforeach; ?>
+                </select>
             </div>
         </div>
 

@@ -1,199 +1,204 @@
 <?php
 /**
- * [!] ARCH: Handler para acciones masivas en ODTs
- * [✓] AUDIT: Recepción de JSON, validación y ejecución por lotes
+ * [!] ARCH: Handler para acciones masivas en ODTs v2
+ * Soporta: unified_update (estado + cuadrilla + orden), toggle_urgent
+ * Registra historial de cambios vía ODTService
  */
+require_once '../../config/database.php';
 require_once '../../includes/auth.php';
+require_once '../../services/ODTService.php';
+require_once '../../services/StateMachine.php';
+require_once '../../services/ErrorService.php';
 
-// [✓] AUDIT: Verificar permisos y sesión
-// Jefe de Cuadrilla no tiene permiso 'odt' pero necesita usar este endpoint para gestión básica
-// session_start(); // YA INICIADA EN auth.php
-$rol = $_SESSION['usuario_rol'] ?? '';
+header('Content-Type: application/json; charset=utf-8');
+
+$rol = $_SESSION['usuario_tipo'] ?? $_SESSION['usuario_rol'] ?? '';
+$idUsuario = $_SESSION['usuario_id'] ?? 0;
 $esJefe = in_array($rol, ['JefeCuadrilla', 'Jefe de Cuadrilla']);
 
-// [DEBUG] Log attempt
-file_put_contents('debug_bulk.txt', date('Y-m-d H:i:s') . " - User: " . ($_SESSION['usuario_nombre'] ?? 'Guest') . " | Rol: '$rol' | HasPerm: " . (tienePermiso('odt') ? 'YES' : 'NO') . " | EsJefe: " . ($esJefe ? 'YES' : 'NO') . "\n", FILE_APPEND);
-
 if (!verificarSesion(false) || (!tienePermiso('odt') && !$esJefe)) {
-    file_put_contents('debug_bulk.txt', " -> DENIED\n", FILE_APPEND);
-    echo json_encode(['success' => false, 'message' => "Acceso denegado. Rol: '$rol'"]);
+    echo json_encode(['success' => false, 'message' => 'Acceso denegado']);
     exit();
 }
 
-// Recibir datos JSON
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
-// [DEBUG] Log received data
-file_put_contents('debug_bulk.txt', " -> Received: " . $input . "\n", FILE_APPEND);
-
 if (!$data || empty($data['ids'])) {
-    file_put_contents('debug_bulk.txt', " -> ERROR: No IDs\n", FILE_APPEND);
-    echo json_encode(['success' => false, 'message' => 'Datos insuficientes']);
+    echo json_encode(['success' => false, 'message' => 'Datos insuficientes: IDs requeridos']);
     exit();
 }
 
-$ids = $data['ids'];
-
-// Validation for simple status change
-if (!isset($data['action']) || $data['action'] !== 'assign_squad') {
-    if (empty($data['estado'])) {
-        echo json_encode(['success' => false, 'message' => 'Estado requerido']);
-        exit();
-    }
-    $nuevoEstado = $data['estado'];
-    $validEstados = ['Sin Programar', 'Programación Solicitada', 'Programado', 'Ejecución', 'Ejecutado', 'Precertificada', 'Finalizado', 'Re-programar', 'Aprobado por inspector', 'Retrabajo', 'Postergado'];
-
-    if (!in_array($nuevoEstado, $validEstados)) {
-        echo json_encode(['success' => false, 'message' => 'Estado inválido']);
-        exit();
-    }
-}
+$ids = array_map('intval', $data['ids']);
+$action = $data['action'] ?? '';
+$odtService = new ODTService($pdo);
 
 try {
-    $pdo->beginTransaction();
+    // ─── TOGGLE URGENTE ───
+    if ($action === 'toggle_urgent') {
+        $results = [];
+        foreach ($ids as $id) {
+            try {
+                $odtService->toggleUrgente($id, $idUsuario);
+                $results[] = ['id' => $id, 'ok' => true];
+            } catch (\Exception $e) {
+                $results[] = ['id' => $id, 'ok' => false, 'error' => $e->getMessage()];
+            }
+        }
+        echo json_encode(['success' => true, 'results' => $results]);
+        exit();
+    }
 
-    // Detectar tipo de acción
-    // Detectar tipo de acción UNIFICADA
-    if (isset($data['action']) && $data['action'] === 'unified_update') {
-        $ids = $data['ids'];
+    // ─── ELIMINACIÓN MASIVA ───
+    if ($action === 'bulk_delete') {
+        // Solo roles con permisos administrativos
+        if ($esJefe) {
+            echo json_encode(['success' => false, 'message' => 'No tenés permisos para eliminar ODTs.']);
+            exit();
+        }
+
+        $deleted = 0;
+        $errors = [];
+
+        $pdo->beginTransaction();
+        try {
+            foreach ($ids as $id) {
+                try {
+                    // Limpiar dependencias antes de borrar el maestro
+                    $pdo->prepare("DELETE FROM odt_fotos WHERE id_odt = ?")->execute([$id]);
+                    $pdo->prepare("DELETE FROM odt_items WHERE id_odt = ?")->execute([$id]);
+                    $pdo->prepare("DELETE FROM odt_materiales WHERE id_odt = ?")->execute([$id]);
+                    $pdo->prepare("DELETE FROM odt_historial WHERE id_odt = ?")->execute([$id]);
+                    $pdo->prepare("DELETE FROM odt_maestro WHERE id_odt = ?")->execute([$id]);
+                    $deleted++;
+                } catch (\PDOException $e) {
+                    $errors[] = "ODT #{$id}: " . $e->getMessage();
+                }
+            }
+
+            if (empty($errors)) {
+                $pdo->commit();
+            } else {
+                $pdo->rollBack();
+            }
+        } catch (\Exception $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            echo json_encode(['success' => false, 'message' => 'Error critico: ' . $e->getMessage()]);
+            exit();
+        }
+
+        $response = ['success' => true, 'message' => "{$deleted} ODT(s) eliminadas correctamente."];
+        if (!empty($errors)) {
+            $response['success'] = false;
+            $response['message'] = 'Algunas ODTs no pudieron eliminarse.';
+            $response['warnings'] = $errors;
+        }
+        echo json_encode($response, JSON_UNESCAPED_UNICODE);
+        exit();
+    }
+
+    // ─── UNIFIED UPDATE (estado + cuadrilla) ───
+    if ($action === 'unified_update') {
         $opsPerformed = 0;
+        $errors = [];
 
-        file_put_contents('debug_bulk.txt', " -> Processing Unified Update for " . count($ids) . " IDs\n", FILE_APPEND);
-
-        // 1. ASIGNACIÓN DE CUADRILLA (Si se envió)
+        // 1. ASIGNACIÓN DE CUADRILLA
         if (!empty($data['cuadrilla']) && !empty($data['fecha'])) {
-            file_put_contents('debug_bulk.txt', " -> Assigning Squad: " . $data['cuadrilla'] . "\n", FILE_APPEND);
-
-            $cuadrilla = $data['cuadrilla'];
+            $cuadrilla = (int) $data['cuadrilla'];
             $fecha = $data['fecha'];
-
-            // Prepare statements
-            $stmtInsert = $pdo->prepare("INSERT INTO programacion_semanal (id_odt, id_cuadrilla, fecha_programada, turno, estado_programacion) VALUES (?, ?, ?, NULL, 'Tildado_Admin')");
-
-            // Logica vencimiento si pasa a programado
-            $stmtUpdateProg = $pdo->prepare("
-                UPDATE odt_maestro o
-                LEFT JOIN tipos_trabajos t ON o.id_tipologia = t.id_tipologia
-                SET 
-                    o.estado_gestion = 'Programado',
-                    o.fecha_vencimiento = CASE 
-                        WHEN t.tiempo_limite_dias > 0 THEN DATE_ADD(?, INTERVAL t.tiempo_limite_dias DAY)
-                        ELSE o.fecha_vencimiento 
-                    END
-                WHERE o.id_odt = ?
-            ");
+            $orden = (int) ($data['orden'] ?? 1);
 
             foreach ($ids as $id) {
-                // Insertar programación
-                $res = $stmtInsert->execute([$id, $cuadrilla, $fecha]);
-                if (!$res) {
-                    file_put_contents('debug_bulk.txt', " -> Error inserting schedule for ID $id: " . implode(" ", $stmtInsert->errorInfo()) . "\n", FILE_APPEND);
-                }
-
-                // Si NO se va a cambiar el estado explícitamente después, aplicamos 'Programado' por defecto al asignar
-                if (empty($data['estado'])) {
-                    $stmtUpdateProg->execute([$fecha, $id]);
+                try {
+                    $odtService->asignar($id, $cuadrilla, $fecha, $orden, $idUsuario);
+                    $orden++; // Auto-increment order for batch assignments
+                } catch (\Exception $e) {
+                    $errors[] = "ODT #{$id}: " . $e->getMessage();
                 }
             }
             $opsPerformed++;
-        } else {
-            file_put_contents('debug_bulk.txt', " -> No Squad Assignment (empty fields)\n", FILE_APPEND);
         }
 
-        // 2. CAMBIO DE ESTADO (Si se envió)
-        if (!empty($data['estado'])) {
+        // 2. CAMBIO DE ESTADO (solo si NO se asignó cuadrilla, ya que asignar cambia a 'Asignado')
+        if (!empty($data['estado']) && empty($data['cuadrilla'])) {
             $nuevoEstado = $data['estado'];
-            file_put_contents('debug_bulk.txt', " -> Changing Status to: $nuevoEstado\n", FILE_APPEND);
 
-            // Validación básica de estado
-            $validEstados = ['Sin Programar', 'Programación Solicitada', 'Programado', 'Ejecución', 'Ejecutado', 'Precertificada', 'Finalizado', 'Re-programar', 'Aprobado por inspector', 'Retrabajo', 'Postergado'];
-            if (in_array($nuevoEstado, $validEstados)) {
-                $placeholders = str_repeat('?,', count($ids) - 1) . '?';
+            if (!StateMachine::isValidState($nuevoEstado)) {
+                echo json_encode(['success' => false, 'message' => "Estado inválido: {$nuevoEstado}"]);
+                exit();
+            }
 
-                if ($nuevoEstado === 'Programado') {
-                    // Update con calculo de vencimiento
-                    $sql = "UPDATE odt_maestro o
-                        LEFT JOIN tipos_trabajos t ON o.id_tipologia = t.id_tipologia
-                        SET o.estado_gestion = ?,
-                            o.fecha_vencimiento = CASE 
-                                WHEN t.tiempo_limite_dias > 0 THEN DATE_ADD(CURRENT_DATE, INTERVAL t.tiempo_limite_dias DAY)
-                                ELSE o.fecha_vencimiento 
-                            END
-                        WHERE o.id_odt IN ($placeholders)";
-                } else {
-                    $sql = "UPDATE odt_maestro SET estado_gestion = ? WHERE id_odt IN ($placeholders)";
+            foreach ($ids as $id) {
+                try {
+                    $odtService->cambiarEstado($id, $nuevoEstado, $idUsuario);
+                } catch (\InvalidArgumentException $e) {
+                    // Transición inválida — no fatal, reportar
+                    $errors[] = "ODT #{$id}: " . $e->getMessage();
+                } catch (\Exception $e) {
+                    $errors[] = "ODT #{$id}: Error - " . $e->getMessage();
                 }
+            }
+            $opsPerformed++;
+        }
 
-                $stmt = $pdo->prepare($sql);
-                $params = array_merge([$nuevoEstado], $ids);
-                $resUpdates = $stmt->execute($params);
-
-                if (!$resUpdates) {
-                    file_put_contents('debug_bulk.txt', " -> Error updating status: " . implode(" ", $stmt->errorInfo()) . "\n", FILE_APPEND);
-                } else {
-                    file_put_contents('debug_bulk.txt', " -> Updated " . $stmt->rowCount() . " rows\n", FILE_APPEND);
+        // Si se asignó cuadrilla Y se pidió un estado diferente de 'Asignado'
+        if (!empty($data['cuadrilla']) && !empty($data['estado']) && $data['estado'] !== 'Asignado') {
+            $nuevoEstado = $data['estado'];
+            if (StateMachine::isValidState($nuevoEstado)) {
+                foreach ($ids as $id) {
+                    try {
+                        $odtService->cambiarEstado($id, $nuevoEstado, $idUsuario);
+                    } catch (\Exception $e) {
+                        $errors[] = "ODT #{$id}: " . $e->getMessage();
+                    }
                 }
-
                 $opsPerformed++;
             }
-        } else {
-            file_put_contents('debug_bulk.txt', " -> No Status Change (empty field)\n", FILE_APPEND);
         }
 
         if ($opsPerformed > 0) {
-            $pdo->commit();
-            file_put_contents('debug_bulk.txt', " -> COMMIT SUCCESS\n", FILE_APPEND);
-            echo json_encode(['success' => true, 'message' => 'Acciones aplicadas correctamente']);
-            exit();
+            $response = ['success' => true, 'message' => 'Acciones aplicadas correctamente'];
+            if (!empty($errors)) {
+                $response['warnings'] = $errors;
+            }
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
         } else {
             echo json_encode(['success' => false, 'message' => 'No se seleccionó ninguna acción (Cuadrilla o Estado)']);
-            $pdo->rollBack();
-            file_put_contents('debug_bulk.txt', " -> ROLLBACK (No ops)\n", FILE_APPEND);
-            exit();
         }
-    }
-
-    // Fallback para legacy calls (si quedan)
-    if (isset($data['action']) && $data['action'] === 'assign_squad') {
-        // ... (Legacy code could be here, but we replaced it)
-        echo json_encode(['success' => false, 'message' => 'API deprecada, use unified_update']);
-        $pdo->rollBack();
         exit();
     }
 
-    // Default: Change Status Logic (Legacy fallback for updateOdtStatus)
-    if (isset($data['estado']) && !isset($data['action'])) {
+    // ─── LEGACY: Cambio de estado directo (sin action) ───
+    if (!empty($data['estado']) && empty($action)) {
         $nuevoEstado = $data['estado'];
 
-        $placeholders = str_repeat('?,', count($ids) - 1) . '?';
-
-        if ($nuevoEstado === 'Programado') {
-            $sql = "UPDATE odt_maestro o
-                LEFT JOIN tipos_trabajos t ON o.id_tipologia = t.id_tipologia
-                SET o.estado_gestion = ?,
-                    o.fecha_vencimiento = CASE 
-                        WHEN t.tiempo_limite_dias > 0 THEN DATE_ADD(CURRENT_DATE, INTERVAL t.tiempo_limite_dias DAY)
-                        ELSE o.fecha_vencimiento 
-                    END
-                WHERE o.id_odt IN ($placeholders)";
-        } else {
-            $sql = "UPDATE odt_maestro SET estado_gestion = ? WHERE id_odt IN ($placeholders)";
+        if (!StateMachine::isValidState($nuevoEstado)) {
+            echo json_encode(['success' => false, 'message' => "Estado inválido: {$nuevoEstado}"]);
+            exit();
         }
 
-        $stmt = $pdo->prepare($sql);
-        $params = array_merge([$nuevoEstado], $ids);
-        $stmt->execute($params);
+        $errors = [];
+        foreach ($ids as $id) {
+            try {
+                $odtService->cambiarEstado($id, $nuevoEstado, $idUsuario);
+            } catch (\Exception $e) {
+                $errors[] = "ODT #{$id}: " . $e->getMessage();
+            }
+        }
 
-        $pdo->commit();
-        echo json_encode(['success' => true, 'count' => $stmt->rowCount()]);
+        $response = ['success' => true, 'count' => count($ids) - count($errors)];
+        if (!empty($errors)) {
+            $response['warnings'] = $errors;
+        }
+        echo json_encode($response, JSON_UNESCAPED_UNICODE);
         exit();
     }
 
-} catch (Exception $e) {
-    if ($pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
-    echo json_encode(['success' => false, 'message' => 'Error de base de datos: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => 'Acción no reconocida']);
+
+} catch (\Exception $e) {
+    $error = ErrorService::capture($e, 'BulkActionController', 'bulk_action', $data);
+    ErrorService::respondWithError($error);
 }
-?>

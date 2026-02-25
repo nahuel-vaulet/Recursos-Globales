@@ -1,0 +1,64 @@
+<!-- Usuarios List View -->
+<div class="view-header">
+    <h1>👤 Usuarios</h1>
+    <div class="view-actions"><button class="btn btn-primary" onclick="usr_showModal()">+ Nuevo Usuario</button></div>
+</div>
+<div class="filter-bar"><input type="text" id="usrSearch" placeholder="Buscar nombre o email..." class="input" />
+    <select id="usrTipo" class="input">
+        <option value="">Todos</option>
+        <option value="Gerente">Gerente</option>
+        <option value="Administrativo">Administrativo</option>
+        <option value="JefeCuadrilla">Jefe Cuadrilla</option>
+        <option value="Coordinador ASSA">Coordinador ASSA</option>
+        <option value="Inspector ASSA">Inspector ASSA</option>
+    </select>
+</div>
+<div class="card">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    <th>Rol</th>
+                    <th>Creado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="usrTableBody">
+                <tr>
+                    <td colspan="5" class="text-center">
+                        <div class="loading-spinner"></div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div id="usrModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="usrModalTitle">Nuevo Usuario</h3><button class="modal-close" onclick="usr_closeModal()">✕</button>
+        </div>
+        <form onsubmit="usr_save(event)"><input type="hidden" id="usrFormId" />
+            <div class="form-group"><label>Nombre *</label><input type="text" id="usrNombre" class="input" required />
+            </div>
+            <div class="form-group"><label>Email *</label><input type="email" id="usrEmail" class="input" required />
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Contraseña</label><input type="password" id="usrPass" class="input"
+                        minlength="6" placeholder="Min 6 caracteres" /></div>
+                <div class="form-group"><label>Rol *</label><select id="usrRol" class="input" required>
+                        <option value="Gerente">Gerente</option>
+                        <option value="Administrativo">Administrativo</option>
+                        <option value="JefeCuadrilla" selected>Jefe Cuadrilla</option>
+                        <option value="Coordinador ASSA">Coordinador ASSA</option>
+                        <option value="Inspector ASSA">Inspector ASSA</option>
+                    </select></div>
+            </div>
+            <div class="form-actions"><button type="button" class="btn"
+                    onclick="usr_closeModal()">Cancelar</button><button type="submit"
+                    class="btn btn-primary">Guardar</button></div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,63 @@
+<!-- Tareas List View -->
+<div class="view-header">
+    <h1>✅ Tareas</h1>
+    <div class="view-actions"><button class="btn btn-primary" onclick="task_showModal()">+ Nueva Tarea</button></div>
+</div>
+<div class="filter-bar">
+    <input type="text" id="taskSearch" placeholder="Buscar tarea..." class="input" />
+    <select id="taskEstado" class="input">
+        <option value="">Todos</option>
+        <option value="pendiente">Pendiente</option>
+        <option value="en_progreso">En progreso</option>
+        <option value="completada">Completada</option>
+    </select>
+</div>
+<div class="card">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Responsable</th>
+                    <th>Prioridad</th>
+                    <th>Vencimiento</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="taskTableBody">
+                <tr>
+                    <td colspan="6" class="text-center">
+                        <div class="loading-spinner"></div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div id="taskModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="taskModalTitle">Nueva Tarea</h3><button class="modal-close" onclick="task_closeModal()">✕</button>
+        </div>
+        <form onsubmit="task_save(event)"><input type="hidden" id="taskFormId" />
+            <div class="form-group"><label>Título *</label><input type="text" id="taskTitulo" class="input" required />
+            </div>
+            <div class="form-group"><label>Descripción</label><textarea id="taskDesc" class="input" rows="3"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Prioridad</label><select id="taskPrioridad" class="input">
+                        <option value="1">Alta</option>
+                        <option value="2">Media-Alta</option>
+                        <option value="3" selected>Normal</option>
+                        <option value="4">Baja</option>
+                    </select></div>
+                <div class="form-group"><label>Vencimiento</label><input type="date" id="taskVenc" class="input" />
+                </div>
+            </div>
+            <div class="form-actions"><button type="button" class="btn"
+                    onclick="task_closeModal()">Cancelar</button><button type="submit"
+                    class="btn btn-primary">Guardar</button></div>
+        </form>
+    </div>
+</div>

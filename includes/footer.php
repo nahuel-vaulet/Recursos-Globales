@@ -25,16 +25,29 @@
     }
 
     // [!] PWA: Lógica de instalación manual
-    let deferredPrompt;
+    window.deferredPrompt = null;
     const installBtn = document.getElementById('pwaInstallBtn');
 
     window.addEventListener('beforeinstallprompt', (e) => {
-        // Prevenir que Chrome muestre el banner automático (opcional, pero mejor para control)
+        // [!] Check if already in standalone mode
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            console.log('[PWA] Standalone mode detected. Ignoring install prompt.');
+            return;
+        }
+
+        // Prevenir que Chrome muestre el banner automático
         e.preventDefault();
-        // Guardar el evento para dispararlo después
-        deferredPrompt = e;
-        // Mostrar botón
-        installBtn.style.display = 'block';
+        // Guardar el evento globalmente
+        window.deferredPrompt = e;
+        // Mostrar botón flotante (backup)
+        if (installBtn) installBtn.style.display = 'block';
+
+        // Actualizar botón del header si existe
+        const headerBtn = document.getElementById('pwa-install-trigger');
+        if (headerBtn) {
+            headerBtn.style.display = 'inline-block';
+            headerBtn.textContent = 'INSTALAR APLICACIÓN';
+        }
     });
 
     installBtn.addEventListener('click', async () => {
@@ -48,7 +61,7 @@
             // Esperar respuesta
             const { outcome } = await deferredPrompt.userChoice;
             console.log(`[PWA] Respuesta usuario: ${outcome}`);
-            
+
             if (outcome === 'accepted') {
                 alert("✅ Instalando... (Revisá la barra de notificaciones o el menú de apps)");
             } else {
@@ -182,6 +195,7 @@
     })();
 </script>
 
+<script src="/APP-Prueba/assets/js/pwa-debug.js"></script>
 </body>
 
 </html>

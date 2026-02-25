@@ -30,7 +30,8 @@ $PERMISOS = [
         'partes',
         'reportes',
         'tareas',
-        'gastos'
+        'gastos',
+        'compras'
     ],
 
     // Administrativo ASSA (Nuevo): Dashboard Operativo + ODTs + Stock + Asistencia
@@ -60,7 +61,8 @@ $PERMISOS = [
         'materiales',
         'materiales',
         'proveedores',
-        'tareas'
+        'tareas',
+        'compras'
     ],
 
     // Jefe de Cuadrilla: Cuadrillas + Partes Diarios (filtrado a la suya)
@@ -200,6 +202,15 @@ $MENU_ESTRUCTURA = [
             ['modulo' => 'usuarios', 'nombre' => 'Usuarios', 'url' => '/APP-Prueba/modules/usuarios/index.php', 'icono' => 'fas fa-user-shield'],
             ['modulo' => 'tareas', 'nombre' => 'Gestión de Tareas', 'url' => '/APP-Prueba/modules/tareas/index.php', 'icono' => 'fas fa-tasks'],
             ['modulo' => 'gastos', 'nombre' => 'Gastos y Caja Chica', 'url' => '/APP-Prueba/modules/gastos/index.php', 'icono' => 'fas fa-money-bill-wave']
+        ]
+    ],
+    'compras' => [
+        'titulo' => 'Compras',
+        'icono' => 'fas fa-shopping-cart',
+        'items' => [
+            ['modulo' => 'compras', 'nombre' => 'Dashboard', 'url' => '/APP-Prueba/modules/compras/index.php', 'icono' => 'fas fa-chart-pie'],
+            ['modulo' => 'compras', 'nombre' => 'Solicitudes', 'url' => '/APP-Prueba/modules/compras/solicitudes/index.php', 'icono' => 'fas fa-file-invoice'],
+            ['modulo' => 'compras', 'nombre' => 'Órdenes de Compra', 'url' => '/APP-Prueba/modules/compras/ordenes/index.php', 'icono' => 'fas fa-file-contract'],
         ]
     ],
     'reportes' => [

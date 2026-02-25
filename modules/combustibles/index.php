@@ -2,11 +2,9 @@
 require_once '../../config/database.php';
 require_once '../../includes/header.php';
 
-// Check permissions (optional, if handled by header/sidebar logic)
-if (!isset($_SESSION['usuario_rol'])) {
-    header("Location: ../../index.php");
-    exit;
-}
+
+
+require_once 'views/squads_data_loader.php';
 ?>
 
 <div class="container-fluid" style="padding: 0 20px;">

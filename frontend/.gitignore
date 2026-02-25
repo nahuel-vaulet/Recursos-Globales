@@ -1,0 +1,17 @@
+# Dependencies
+/node_modules/
+
+# Environment
+.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build (if we add a bundler later)
+/dist/

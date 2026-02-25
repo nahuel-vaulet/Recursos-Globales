@@ -1,6 +1,29 @@
-/vendor/
-/node_modules/
+# PHP / Composer
+vendor/
+composer.lock
+.php-cs-fixer.cache
+.phpunit.result.cache
+
+# Environment
 .env
-.DS_Store
-/cert/server.key
+.env.local
+.env.production
+config.php
+
+# XAMPP / Windows
+/tmp/
+/temp/
 *.log
+Thumbs.db
+Desktop.ini
+
+# IDEs
+.vscode/
+.idea/
+
+# Node (si se usara en el futuro)
+node_modules/
+
+# Uploads (en producción se usa Supabase Storage)
+uploads/*
+!uploads/.gitkeep

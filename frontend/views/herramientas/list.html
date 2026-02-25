@@ -1,0 +1,50 @@
+<!-- Herramientas List View -->
+<div class="view-header">
+    <h1>🔧 Herramientas</h1>
+    <div class="view-actions"><button class="btn btn-primary" onclick="tool_showModal()">+ Nueva Herramienta</button>
+    </div>
+</div>
+<div class="filter-bar"><input type="text" id="toolSearch" placeholder="Buscar herramienta..." class="input" /></div>
+<div class="card">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Marca</th>
+                    <th>Cuadrilla</th>
+                    <th>Proveedor</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="toolTableBody">
+                <tr>
+                    <td colspan="6" class="text-center">
+                        <div class="loading-spinner"></div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div id="toolModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="toolModalTitle">Nueva Herramienta</h3><button class="modal-close"
+                onclick="tool_closeModal()">✕</button>
+        </div>
+        <form onsubmit="tool_save(event)"><input type="hidden" id="toolFormId" />
+            <div class="form-group"><label>Nombre *</label><input type="text" id="toolNombre" class="input" required />
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Código</label><input type="text" id="toolCodigo" class="input" /></div>
+                <div class="form-group"><label>Marca</label><input type="text" id="toolMarca" class="input" /></div>
+            </div>
+            <div class="form-group"><label>Proveedor</label><input type="text" id="toolProveedor" class="input" /></div>
+            <div class="form-actions"><button type="button" class="btn"
+                    onclick="tool_closeModal()">Cancelar</button><button type="submit"
+                    class="btn btn-primary">Guardar</button></div>
+        </form>
+    </div>
+</div>

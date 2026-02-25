@@ -1,0 +1,54 @@
+<!-- Vehículos List View -->
+<div class="view-header">
+    <h1>🚗 Vehículos</h1>
+    <div class="view-actions"><button class="btn btn-primary" onclick="veh_showModal()">+ Nuevo Vehículo</button></div>
+</div>
+<div class="filter-bar"><input type="text" id="vehSearch" placeholder="Buscar patente, marca..." class="input" /></div>
+<div class="card">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Patente</th>
+                    <th>Marca</th>
+                    <th>Modelo</th>
+                    <th>Año</th>
+                    <th>Cuadrilla</th>
+                    <th>Km</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="vehTableBody">
+                <tr>
+                    <td colspan="7" class="text-center">
+                        <div class="loading-spinner"></div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div id="vehModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="vehModalTitle">Nuevo Vehículo</h3><button class="modal-close" onclick="veh_closeModal()">✕</button>
+        </div>
+        <form id="vehForm" onsubmit="veh_save(event)">
+            <input type="hidden" id="vehFormId" />
+            <div class="form-group"><label>Patente *</label><input type="text" id="vehPatente" class="input" required />
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Marca</label><input type="text" id="vehMarca" class="input" /></div>
+                <div class="form-group"><label>Modelo</label><input type="text" id="vehModelo" class="input" /></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Año</label><input type="number" id="vehAnio" class="input" /></div>
+                <div class="form-group"><label>Km Actual</label><input type="number" id="vehKm" class="input"
+                        value="0" /></div>
+            </div>
+            <div class="form-actions"><button type="button" class="btn"
+                    onclick="veh_closeModal()">Cancelar</button><button type="submit"
+                    class="btn btn-primary">Guardar</button></div>
+        </form>
+    </div>
+</div>

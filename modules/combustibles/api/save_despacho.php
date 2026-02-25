@@ -54,6 +54,49 @@ try {
     $stmtUpd = $pdo->prepare("UPDATE combustibles_tanques SET stock_actual = stock_actual - ? WHERE id_tanque = ?");
     $stmtUpd->execute([$litros, $id_tanque]);
 
+    // 3. Update Vehicle Odometer
+    if ($id_vehiculo && $odometro > 0) {
+        $stmtVeh = $pdo->prepare("UPDATE vehiculos SET km_actual = ? WHERE id_vehiculo = ?");
+        $stmtVeh->execute([$odometro, $id_vehiculo]);
+    }
+
+    // 4. Record movement in legacy 'movimientos' table and update squad stock
+    if ($id_cuadrilla) {
+        // Resolve Material ID
+        $tType = strtolower($tank['tipo_combustible'] ?? '');
+        $idMaterial = (strpos($tType, 'nafta') !== false) ? 1000 : 1001;
+
+        // Final sanity check for Material ID in DB
+        $checkMat = $pdo->prepare("SELECT id_material FROM maestro_materiales WHERE id_material = ?");
+        $checkMat->execute([$idMaterial]);
+        if (!$checkMat->fetch())
+            $idMaterial = 999; // Fallback to Universal
+
+        // A. Record Movement
+        $stmtMov = $pdo->prepare("
+            INSERT INTO movimientos (nro_documento, tipo_movimiento, id_material, cantidad, id_cuadrilla, usuario_despacho, fecha_hora)
+            VALUES (?, 'Entrega_Oficina_Cuadrilla', ?, ?, ?, ?, NOW())
+        ");
+        $stmtMov->execute([
+            'DESP-LGC-' . $id_despacho,
+            $idMaterial,
+            $litros,
+            $id_cuadrilla,
+            $usuario_despacho
+        ]);
+
+        // B. Update Squad Stock (UPSERT)
+        $stmtCheckStk = $pdo->prepare("SELECT COUNT(*) FROM stock_cuadrilla WHERE id_cuadrilla = ? AND id_material = ?");
+        $stmtCheckStk->execute([$id_cuadrilla, $idMaterial]);
+        if ((int) $stmtCheckStk->fetchColumn() > 0) {
+            $stmtUpStk = $pdo->prepare("UPDATE stock_cuadrilla SET cantidad = cantidad + ? WHERE id_cuadrilla = ? AND id_material = ?");
+            $stmtUpStk->execute([$litros, $id_cuadrilla, $idMaterial]);
+        } else {
+            $stmtInsStk = $pdo->prepare("INSERT INTO stock_cuadrilla (id_cuadrilla, id_material, cantidad) VALUES (?, ?, ?)");
+            $stmtInsStk->execute([$id_cuadrilla, $idMaterial, $litros]);
+        }
+    }
+
     $pdo->commit();
 
     // Get cuadrilla name for remito if available

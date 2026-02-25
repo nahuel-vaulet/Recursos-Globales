@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sin Conexión — ERP Recursos Globales</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #0d1b2a;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .offline-container {
+            text-align: center;
+            padding: 40px;
+            max-width: 440px;
+        }
+
+        .offline-icon {
+            font-size: 4rem;
+            margin-bottom: 24px;
+            opacity: 0.6;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+        }
+
+        p {
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .btn-retry {
+            display: inline-block;
+            padding: 12px 32px;
+            background: #64b5f6;
+            color: #0d1b2a;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-retry:hover {
+            filter: brightness(1.1);
+        }
+
+        .error-code {
+            margin-top: 20px;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">📡</div>
+        <h1>Sin Conexión</h1>
+        <p>No se puede conectar con el servidor. Verificá tu conexión a internet e intentá nuevamente.</p>
+        <button class="btn-retry" onclick="window.location.reload()">
+            Reintentar
+        </button>
+        <div class="error-code">ERR-CX-OFFLINE</div>
+    </div>
+</body>
+
+</html>

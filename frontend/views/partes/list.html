@@ -1,0 +1,53 @@
+<!-- Partes Diarios View -->
+<div class="view-header">
+    <h1>📋 Partes Diarios</h1>
+    <div class="view-actions"><button class="btn btn-primary" onclick="parte_showModal()">+ Nuevo Parte</button></div>
+</div>
+<div class="filter-bar">
+    <input type="date" id="parteFecha" class="input" />
+    <select id="parteCuadrilla" class="input">
+        <option value="">Todas las cuadrillas</option>
+    </select>
+</div>
+<div class="card">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Cuadrilla</th>
+                    <th>Usuario</th>
+                    <th>Observaciones</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="parteTableBody">
+                <tr>
+                    <td colspan="5" class="text-center">
+                        <div class="loading-spinner"></div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div id="parteModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Nuevo Parte Diario</h3><button class="modal-close" onclick="parte_closeModal()">✕</button>
+        </div>
+        <form onsubmit="parte_save(event)">
+            <div class="form-row">
+                <div class="form-group"><label>Fecha *</label><input type="date" id="parteFormFecha" class="input"
+                        required /></div>
+                <div class="form-group"><label>Cuadrilla *</label><select id="parteFormCuadrilla" class="input"
+                        required></select></div>
+            </div>
+            <div class="form-group"><label>Observaciones</label><textarea id="parteFormObs" class="input"
+                    rows="3"></textarea></div>
+            <div class="form-actions"><button type="button" class="btn"
+                    onclick="parte_closeModal()">Cancelar</button><button type="submit"
+                    class="btn btn-primary">Guardar</button></div>
+        </form>
+    </div>
+</div>

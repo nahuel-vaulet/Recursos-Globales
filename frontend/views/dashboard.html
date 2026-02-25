@@ -1,0 +1,60 @@
+<!-- Dashboard View -->
+<div class="view-header">
+    <h1>📊 Dashboard</h1>
+    <p class="text-muted">Resumen general del sistema</p>
+</div>
+
+<!-- KPI Cards -->
+<div class="kpi-grid" id="dashboardKpis">
+    <div class="kpi-card">
+        <div class="kpi-icon">📦</div>
+        <div class="kpi-value" id="kpi-materiales">–</div>
+        <div class="kpi-label">Materiales</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon">⚠️</div>
+        <div class="kpi-value" id="kpi-alertas">–</div>
+        <div class="kpi-label">Alertas Stock</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon">🔄</div>
+        <div class="kpi-value" id="kpi-movimientos">–</div>
+        <div class="kpi-label">Mov. Hoy</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon">👷</div>
+        <div class="kpi-value" id="kpi-cuadrillas">–</div>
+        <div class="kpi-label">Cuadrillas</div>
+    </div>
+    <div class="kpi-card accent">
+        <div class="kpi-icon">📈</div>
+        <div class="kpi-value" id="kpi-consumo">–</div>
+        <div class="kpi-label">Consumo Mes</div>
+        <div class="kpi-change" id="kpi-variacion"></div>
+    </div>
+</div>
+
+<!-- Alerts & Recent Row -->
+<div class="dashboard-grid">
+    <!-- Low Stock Alerts -->
+    <div class="card">
+        <div class="card-header">
+            <h3>⚠️ Alertas de Stock Bajo</h3>
+            <a href="#/stock" class="btn btn-sm">Ver todos</a>
+        </div>
+        <div id="dashboardAlerts" class="card-body">
+            <div class="loading-spinner"></div>
+        </div>
+    </div>
+
+    <!-- Recent Movements -->
+    <div class="card">
+        <div class="card-header">
+            <h3>🔄 Últimos Movimientos</h3>
+            <a href="#/stock" class="btn btn-sm">Ver todos</a>
+        </div>
+        <div id="dashboardRecent" class="card-body">
+            <div class="loading-spinner"></div>
+        </div>
+    </div>
+</div>

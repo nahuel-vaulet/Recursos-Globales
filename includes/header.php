@@ -32,11 +32,11 @@ $menuFiltrado = generarMenuFiltrado($usuarioActual['tipo_usuario']);
     -->
 
     <!-- [!] PWA: Meta tags para instalabilidad Android -->
-    <meta name="theme-color" content="#16213e">
+    <meta name="theme-color" content="#0d1b2a">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <link rel="manifest" href="/APP-Prueba/manifest.json">
+    <link rel="manifest" href="/APP-Prueba/manifest.php">
     <link rel="apple-touch-icon" href="/APP-Prueba/icons/icon-192.png">
 
     <title>Recursos Globales - ERP</title>
@@ -399,7 +399,10 @@ $menuFiltrado = generarMenuFiltrado($usuarioActual['tipo_usuario']);
                         <i class="fas fa-moon moon-icon"></i>
                     </span>
                 </label>
+                </label>
             </li>
+
+
 
             <!-- Botón Logout directo para móvil -->
             <li class="nav-item logout-mobile">
@@ -463,6 +466,75 @@ $menuFiltrado = generarMenuFiltrado($usuarioActual['tipo_usuario']);
             </li>
         </ul>
     </header>
+
+    <!-- [!] PWA: Banner de Advertencia HTTPS -->
+    <script>
+        if (location.protocol === 'https:' && location.hostname === '192.168.100.8') {
+            document.write(`
+                <div style="background: #ffcccb; color: #b71c1c; padding: 20px; text-align: center; border-bottom: 2px solid #b71c1c;">
+                    <p style="font-weight: bold; margin: 0 0 10px 0;"><i class="fas fa-exclamation-triangle"></i> ERROR DE CONEXIÓN</p>
+                    <p style="margin: 0 0 15px 0;">Estás en modo HTTPS Seguro, pero el certificado no es válido, por lo que <strong>NO PODRÁS INSTALAR LA APP</strong>.</p>
+                    <a href="http://192.168.100.8/APP-Prueba/" style="background: #b71c1c; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; display: inline-block;">
+                        CAMBIAR A MODO COMPATIBLE (HTTP)
+                    </a>
+                </div>
+            `);
+        }
+    </script>
+
+    <!-- [!] PWA: Banner de Ayuda para Instalación (Solo si no está instalada) -->
+    <!-- [!] PWA: Banner de Ayuda para Instalación (Solo si no está instalada) -->
+    <div id="pwa-help-banner"
+        style="display: none; background: #e3f2fd; color: #0d47a1; padding: 15px; border-bottom: 1px solid #bbdefb; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+        <p style="margin: 0; font-weight: 500; font-size: 1.1em;">
+            <i class="fas fa-mobile-alt"></i> Instalar App
+        </p>
+        <p style="margin: 5px 0 10px; font-size: 0.9em;">
+            Instala la aplicación para verla a pantalla completa y sin barras del navegador.
+        </p>
+
+        <button id="pwa-install-trigger" onclick="installPWA()"
+            style="background: #0d47a1; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; display: inline-block; margin-bottom: 10px;">
+            INSTALAR AHORA
+        </button>
+
+        <br>
+        <button onclick="runPWADiagnostics()"
+            style="background:#555; color:white; font-size:0.7em; border:none; padding:4px 8px; border-radius:4px; margin-right:10px; cursor: pointer;">🔍
+            Diagnóstico</button>
+        <button onclick="document.getElementById('pwa-help-banner').style.display='none'"
+            style="background:none; border:none; color: #666; font-size: 0.8em; text-decoration: underline; cursor: pointer;">Cerrar</button>
+    </div>
+
+    <script>
+        // Función de instalación global
+        async function installPWA() {
+            if (window.deferredPrompt) {
+                // Si el navegador disparó el evento, lo usamos
+                try {
+                    window.deferredPrompt.prompt();
+                    const { outcome } = await window.deferredPrompt.userChoice;
+                    console.log('User choice:', outcome);
+                    window.deferredPrompt = null;
+                    if (outcome === 'accepted') {
+                        document.getElementById('pwa-help-banner').style.display = 'none';
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            } else {
+                // Fallback: Instrucciones manuales
+                alert("⚠️ Su navegador no permite instalación automática.\n\nPor favor use el menú de 3 puntos (⋮) -> 'Instalar aplicación' o 'Agregar a inicio'.");
+            }
+        }
+
+        // Mostrar banner solo si NO es standalone y es móvil
+        if (!window.matchMedia('(display-mode: standalone)').matches && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
+            setTimeout(() => {
+                document.getElementById('pwa-help-banner').style.display = 'block';
+            }, 1000);
+        }
+    </script>
 
     <main class="container">
 

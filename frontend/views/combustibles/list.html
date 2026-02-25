@@ -1,0 +1,74 @@
+<!-- Combustibles View -->
+<div class="view-header">
+    <h1>⛽ Combustibles</h1>
+    <div class="view-actions">
+        <button class="btn btn-primary" onclick="fuel_showCarga()">📥 Registrar Carga</button>
+        <button class="btn btn-accent" onclick="fuel_showDespacho()">📤 Despacho</button>
+    </div>
+</div>
+<div class="kpi-grid" id="fuelTanks"></div>
+<div class="card">
+    <div class="card-header">
+        <h3>Historial</h3>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Litros</th>
+                    <th>Vehículo</th>
+                    <th>Tanque</th>
+                    <th>Usuario</th>
+                </tr>
+            </thead>
+            <tbody id="fuelTableBody">
+                <tr>
+                    <td colspan="6" class="text-center">
+                        <div class="loading-spinner"></div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div id="fuelModalCarga" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Registrar Carga</h3><button class="modal-close" onclick="fuel_closeCarga()">✕</button>
+        </div>
+        <form onsubmit="fuel_saveCarga(event)">
+            <div class="form-group"><label>Tanque</label><select id="fuelCargaTanque" class="input"></select></div>
+            <div class="form-group"><label>Litros *</label><input type="number" id="fuelCargaLitros" class="input"
+                    step="0.1" required /></div>
+            <div class="form-group"><label>Observaciones</label><textarea id="fuelCargaObs" class="input"></textarea>
+            </div>
+            <div class="form-actions"><button type="button" class="btn"
+                    onclick="fuel_closeCarga()">Cancelar</button><button type="submit"
+                    class="btn btn-primary">Guardar</button></div>
+        </form>
+    </div>
+</div>
+<div id="fuelModalDespacho" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Despacho a Vehículo</h3><button class="modal-close" onclick="fuel_closeDespacho()">✕</button>
+        </div>
+        <form onsubmit="fuel_saveDespacho(event)">
+            <div class="form-group"><label>Vehículo</label><select id="fuelDespachoVeh" class="input"></select></div>
+            <div class="form-group"><label>Tanque (opcional)</label><select id="fuelDespachoTanque" class="input">
+                    <option value="">Compra directa</option>
+                </select></div>
+            <div class="form-row">
+                <div class="form-group"><label>Litros *</label><input type="number" id="fuelDespachoLitros"
+                        class="input" step="0.1" required /></div>
+                <div class="form-group"><label>Km Odómetro</label><input type="number" id="fuelDespachoKm"
+                        class="input" /></div>
+            </div>
+            <div class="form-actions"><button type="button" class="btn"
+                    onclick="fuel_closeDespacho()">Cancelar</button><button type="submit"
+                    class="btn btn-primary">Guardar</button></div>
+        </form>
+    </div>
+</div>

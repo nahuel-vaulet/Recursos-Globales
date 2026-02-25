@@ -1,0 +1,61 @@
+# ─── Exclude from Docker build ─────────────────
+.git
+.gitignore
+*.md
+*.txt
+*.pdf
+*.png
+*.jpg
+*.webp
+*.rtf
+
+# Development files
+.agent/
+.gemini/
+notebooklm-mcp/
+Compras/
+erp_v1/
+proximas mejoras app/
+
+# Debug/migration scripts
+debug_*.php
+diag_*.php
+check_*.php
+test_*.php
+migration_*.php
+migrate_*.php
+db_migration_*.php
+run_migration*.php
+fix_*.php
+find_*.php
+exhaustive_diag.php
+seed_vehicles.php
+sim_service*.php
+insert_tipos_trabajo.php
+inspect_schema.php
+list_types.php
+live_test_ins.php
+setup.php
+
+# SQL backups
+*.sql
+sql/
+
+# Existing monolith (not needed in Docker)
+modules/
+includes/
+api/
+config/
+services/
+views/
+assets/
+vendor/
+uploads/
+icons/
+imagenes-app/
+cert/
+scripts/
+
+# Temp
+composer.phar
+composer-setup.php

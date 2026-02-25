@@ -263,6 +263,8 @@
         }
     </style>
 
+    <div class="card">
+    <div class="card">
     <div class="container-fluid" style="padding-top: 20px;">
         <!-- 1. KPIs Financieros y Logísticos -->
         <div class="dash-grid">
@@ -441,11 +443,7 @@
                 .catch(e => console.error(e));
         });
     </script>
-<?php endif; ?>
-
-<div class="card">
-    <h1>Bienvenido al ERP de Recursos Globales</h1>
-    <p>Seleccione un módulo del menú superior para comenzar.</p>
+<?php else: ?>
 
     <div
         style="margin-top: var(--spacing-lg); display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--spacing-md);">
@@ -476,6 +474,17 @@
             </div>
         <?php endif; ?>
 
+        <?php if (tienePermiso('compras')): ?>
+            <div class="card" style="border-left: 5px solid #2980b9;">
+                <h3><i class="fas fa-shopping-cart"></i> Compras</h3>
+                <p>Solicitudes y Órdenes de Compra</p>
+                <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: var(--spacing-sm);">
+                    <a href="modules/compras/index.php" class="btn btn-sm btn-outline">Dashboard</a>
+                    <a href="modules/compras/solicitudes/index.php" class="btn btn-sm btn-outline">Solicitudes</a>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <?php if (in_array($_SESSION['usuario_tipo'] ?? $_SESSION['usuario_rol'] ?? '', ['Gerente', 'Administrativo', 'Coordinador ASSA'])): ?>
             <div class="card" style="border-left: 5px solid #9b59b6;">
                 <h3><i class="fas fa-calendar-alt"></i> Gestión de Tareas</h3>
@@ -486,8 +495,8 @@
         <?php endif; ?>
 
 
-
     </div>
-</div>
+    </div> <!-- Close container -->
+<?php endif; ?>
 
 <?php require_once 'includes/footer.php'; ?>

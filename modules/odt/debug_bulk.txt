@@ -113,3 +113,37 @@
  -> Changing Status to: Programado
  -> Updated 1 rows
  -> COMMIT SUCCESS
+2026-02-10 23:42:09 - User: Gerente | Rol: '' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["4","2","5","1"],"cuadrilla":"1","fecha":"2026-02-10","estado":"Programado"}
+ -> Processing Unified Update for 4 IDs
+ -> Assigning Squad: 1
+2026-02-10 23:42:17 - User: Gerente | Rol: '' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["4","2","5","1"],"cuadrilla":"1","fecha":"2026-02-10","estado":"Programado"}
+ -> Processing Unified Update for 4 IDs
+ -> Assigning Squad: 1
+2026-02-10 23:42:32 - User: Gerente | Rol: '' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["4","2","5","1"],"cuadrilla":"1","fecha":"2026-02-10","estado":"Programado"}
+ -> Processing Unified Update for 4 IDs
+ -> Assigning Squad: 1
+2026-02-10 23:42:47 - User: Gerente | Rol: '' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["4"],"cuadrilla":"1","fecha":"2026-02-10","estado":"Programado"}
+ -> Processing Unified Update for 1 IDs
+ -> Assigning Squad: 1
+2026-02-19 21:33:00 - User: Gerente | Rol: '' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["4","2","5","1"],"cuadrilla":"","fecha":"2026-02-19","estado":"Programación Solicitada"}
+ -> Processing Unified Update for 4 IDs
+ -> No Squad Assignment (empty fields)
+ -> Changing Status to: Programación Solicitada
+ -> Updated 4 rows
+ -> COMMIT SUCCESS
+2026-02-19 21:33:24 - User: Gerente | Rol: '' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["4","2","5","1"],"cuadrilla":"","fecha":"2026-02-19","estado":"Programado"}
+ -> Processing Unified Update for 4 IDs
+ -> No Squad Assignment (empty fields)
+ -> Changing Status to: Programado
+ -> Updated 4 rows
+ -> COMMIT SUCCESS
+2026-02-19 21:34:22 - User: Gerente | Rol: '' | HasPerm: YES | EsJefe: NO
+ -> Received: {"action":"unified_update","ids":["5"],"cuadrilla":"1","fecha":"2026-02-19","estado":"Programado"}
+ -> Processing Unified Update for 1 IDs
+ -> Assigning Squad: 1

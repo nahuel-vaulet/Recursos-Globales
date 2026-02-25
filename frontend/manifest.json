@@ -1,22 +1,22 @@
 {
     "name": "ERP Recursos Globales",
     "short_name": "ERP RG",
-    "description": "Gestión de ODTs y operaciones para ASSA",
-    "id": "/APP-Prueba/",
-    "start_url": "/APP-Prueba/",
+    "description": "Sistema ERP para gestión de recursos, ODTs, stock y personal",
+    "start_url": "./index.html",
+    "scope": "./",
     "display": "standalone",
-    "orientation": "portrait",
-    "background_color": "#1a1a2e",
-    "theme_color": "#16213e",
+    "orientation": "any",
+    "theme_color": "#0d1b2a",
+    "background_color": "#0d1b2a",
     "icons": [
         {
-            "src": "/APP-Prueba/icons/icon-192.png",
+            "src": "assets/icons/icon-192.png",
             "sizes": "192x192",
             "type": "image/png",
             "purpose": "any maskable"
         },
         {
-            "src": "/APP-Prueba/icons/icon-512.png",
+            "src": "assets/icons/icon-512.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "any maskable"
@@ -24,7 +24,7 @@
     ],
     "categories": [
         "business",
-        "productivity",
-        "utilities"
-    ]
+        "productivity"
+    ],
+    "lang": "es"
 }
