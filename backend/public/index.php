@@ -17,6 +17,21 @@ require_once __DIR__ . '/../vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->safeLoad();
 
+// ─── Fix Apache Authorization header ───────────────────
+// Apache CGI/FastCGI may strip the Authorization header.
+// This reads it from alternative sources as a fallback.
+if (empty($_SERVER['HTTP_AUTHORIZATION'])) {
+    if (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        $_SERVER['HTTP_AUTHORIZATION'] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+    } elseif (function_exists('getallheaders')) {
+        $headers = getallheaders();
+        $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+        if (!empty($authHeader)) {
+            $_SERVER['HTTP_AUTHORIZATION'] = $authHeader;
+        }
+    }
+}
+
 // ─── Global error handling ──────────────────────────────
 set_exception_handler(function (\Throwable $e) {
     $isDev = ($_ENV['APP_DEBUG'] ?? 'false') === 'true';
