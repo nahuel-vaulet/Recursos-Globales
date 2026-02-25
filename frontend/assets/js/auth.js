@@ -123,3 +123,31 @@ const AuthManager = {
         return user.tipo === role;
     }
 };
+
+// ─── Global Event Handlers ─────────────────────────────
+window.handleLogin = async function (event) {
+    event.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    const errDiv = document.getElementById('loginError');
+
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iniciando...';
+    errDiv.style.display = 'none';
+
+    try {
+        await AuthManager.login(email, password);
+        window.location.hash = '#/';
+        window.location.reload();
+    } catch (err) {
+        errDiv.textContent = `[${err.code || 'ERROR'}] ${err.message}`;
+        errDiv.style.display = 'block';
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión';
+        }
+    }
+};
