@@ -1,12 +1,16 @@
 FROM php:8.2-apache
 
-# ─── Install PostgreSQL + CURL drivers ──────────────────
+# ─── Install PostgreSQL + CURL + GD drivers ──────────────────
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     libcurl4-openssl-dev \
     libzip-dev \
     unzip \
-    && docker-php-ext-install pdo pdo_pgsql pdo_mysql curl zip \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo pdo_pgsql pdo_mysql curl zip gd \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # ─── Enable Apache mod_rewrite ─────────────────────────
