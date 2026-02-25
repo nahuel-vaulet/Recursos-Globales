@@ -3,7 +3,7 @@
  * [✓] AUDIT: Cache-first for static assets, network-first for API
  */
 
-const CACHE_NAME = 'erp-rg-v2.1.0';
+const CACHE_NAME = 'erp-rg-v2.2.0';
 const STATIC_ASSETS = [
     './',
     './index.html',

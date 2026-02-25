@@ -1,23 +1,54 @@
-<!-- Cuadrillas List View -->
+<!-- Cuadrillas List View — Responsive + Column Selector -->
 <div class="view-header">
     <h1>👷 Cuadrillas</h1>
     <div class="view-actions">
-        <button class="btn btn-primary" onclick="cuad_showModal()">+ Nueva Cuadrilla</button>
+        <button class="btn btn-primary" onclick="cuad_showModal()">
+            <i class="fas fa-plus"></i> Nueva Cuadrilla
+        </button>
     </div>
 </div>
-<div class="filter-bar">
-    <input type="text" id="cuadSearch" placeholder="Buscar cuadrilla..." class="input" />
+
+<div class="filter-bar" style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:16px;">
+    <input type="text" id="cuadSearch" placeholder="🔍 Buscar cuadrilla..." class="input"
+        style="flex:1; min-width:180px;" />
+
+    <!-- Column Selector Dropdown -->
+    <div class="col-selector" id="cuadColSelector">
+        <button type="button" class="btn btn-ghost col-selector-btn" onclick="cuad_toggleColMenu()">
+            <i class="fas fa-columns"></i> Columnas <i class="fas fa-chevron-down" style="font-size:0.7em;"></i>
+        </button>
+        <div class="col-selector-menu" id="cuadColMenu">
+            <label class="col-selector-item">
+                <input type="checkbox" data-col="especialidad" checked onchange="cuad_toggleCol(this)" />
+                <span>Especialidad</span>
+            </label>
+            <label class="col-selector-item">
+                <input type="checkbox" data-col="color" checked onchange="cuad_toggleCol(this)" />
+                <span>Color</span>
+            </label>
+            <label class="col-selector-item">
+                <input type="checkbox" data-col="odtsHoy" checked onchange="cuad_toggleCol(this)" />
+                <span>ODTs Hoy</span>
+            </label>
+            <label class="col-selector-item">
+                <input type="checkbox" data-col="odtsManana" checked onchange="cuad_toggleCol(this)" />
+                <span>ODTs Mañana</span>
+            </label>
+        </div>
+    </div>
 </div>
-<div class="card">
+
+<!-- Desktop Table -->
+<div class="card cuad-desktop-view">
     <div class="table-responsive">
-        <table class="data-table">
+        <table class="data-table" id="cuadTable">
             <thead>
                 <tr>
                     <th>Cuadrilla</th>
-                    <th>Especialidad</th>
-                    <th>Color</th>
-                    <th>ODTs Hoy</th>
-                    <th>ODTs Mañana</th>
+                    <th data-col="especialidad">Especialidad</th>
+                    <th data-col="color">Color</th>
+                    <th data-col="odtsHoy">ODTs Hoy</th>
+                    <th data-col="odtsManana">ODTs Mañana</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -31,21 +62,36 @@
         </table>
     </div>
 </div>
+
+<!-- Mobile Cards -->
+<div class="cuad-mobile-view" id="cuadMobileCards">
+    <div class="loading-spinner"><i class="fas fa-circle-notch fa-spin fa-2x"></i>
+        <p>Cargando...</p>
+    </div>
+</div>
+
+<!-- Modal -->
 <div id="cuadModal" class="modal" style="display:none;">
     <div class="modal-content">
         <div class="modal-header">
-            <h3 id="cuadModalTitle">Nueva Cuadrilla</h3><button class="modal-close"
-                onclick="cuad_closeModal()">✕</button>
+            <h3 id="cuadModalTitle">Nueva Cuadrilla</h3>
+            <button class="modal-close" onclick="cuad_closeModal()">✕</button>
         </div>
         <form id="cuadForm" onsubmit="cuad_save(event)">
             <input type="hidden" id="cuadFormId" />
-            <div class="form-group"><label>Nombre *</label><input type="text" id="cuadFormNombre" class="input"
-                    required /></div>
+            <div class="form-group">
+                <label>Nombre *</label>
+                <input type="text" id="cuadFormNombre" class="input" required />
+            </div>
             <div class="form-row">
-                <div class="form-group"><label>Especialidad</label><input type="text" id="cuadFormEspec"
-                        class="input" /></div>
-                <div class="form-group"><label>Color</label><input type="color" id="cuadFormColor" class="input"
-                        value="#607D8B" /></div>
+                <div class="form-group">
+                    <label>Especialidad</label>
+                    <input type="text" id="cuadFormEspec" class="input" />
+                </div>
+                <div class="form-group">
+                    <label>Color</label>
+                    <input type="color" id="cuadFormColor" class="input" value="#607D8B" />
+                </div>
             </div>
             <div class="form-actions">
                 <button type="button" class="btn" onclick="cuad_closeModal()">Cancelar</button>
@@ -54,3 +100,322 @@
         </form>
     </div>
 </div>
+
+<style>
+    /* ─── View Header ─────────────────────────── */
+    .view-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .view-header h1 {
+        font-size: 1.4rem;
+    }
+
+    /* ─── Column Selector ─────────────────────── */
+    .col-selector {
+        position: relative;
+    }
+
+    .col-selector-btn {
+        white-space: nowrap;
+        gap: 6px;
+    }
+
+    .col-selector-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 6px;
+        background: var(--bg-card);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg);
+        padding: 8px;
+        min-width: 200px;
+        z-index: 100;
+    }
+
+    .col-selector-menu.open {
+        display: block;
+    }
+
+    .col-selector-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-size: var(--font-small);
+        color: var(--text-primary);
+        transition: var(--transition-fast);
+    }
+
+    .col-selector-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    .col-selector-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--accent-primary);
+        cursor: pointer;
+    }
+
+    /* ─── Table Responsive Wrapper ────────────── */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* ─── Mobile Cards (hidden on desktop) ────── */
+    .cuad-mobile-view {
+        display: none;
+    }
+
+    .cuad-card {
+        background: var(--bg-card);
+        border-radius: var(--radius-md);
+        padding: 16px;
+        margin-bottom: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        box-shadow: var(--shadow-sm);
+        transition: var(--transition-fast);
+    }
+
+    .cuad-card:active {
+        transform: scale(0.99);
+    }
+
+    .cuad-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+
+    .cuad-card-name {
+        font-weight: 600;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .cuad-card-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 6px;
+        flex-shrink: 0;
+        border: 2px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .cuad-card-body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .cuad-card-field {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .cuad-card-label {
+        font-size: var(--font-micro);
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .cuad-card-value {
+        font-size: var(--font-small);
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    .cuad-card-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .cuad-card-actions .btn {
+        flex: 1;
+        justify-content: center;
+        font-size: var(--font-small);
+        padding: 8px;
+    }
+
+    /* ─── Modal Responsive ────────────────────── */
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        padding: 16px;
+    }
+
+    .modal-content {
+        background: var(--bg-card);
+        border-radius: var(--radius-xl);
+        padding: 24px;
+        width: 100%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow-lg);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 1.3em;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: var(--radius-sm);
+        transition: var(--transition-fast);
+    }
+
+    .modal-close:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-group label {
+        display: block;
+        font-weight: 500;
+        font-size: var(--font-small);
+        margin-bottom: 6px;
+        color: var(--text-secondary);
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 8px;
+    }
+
+    /* ─── Text helpers ────────────────────────── */
+    .text-center {
+        text-align: center;
+    }
+
+    .text-muted {
+        color: var(--text-muted);
+    }
+
+    /* ─── Hidden column utility ───────────────── */
+    .col-hidden {
+        display: none !important;
+    }
+
+    /* ─── OTD badges ──────────────────────────── */
+    .odt-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 28px;
+        padding: 3px 8px;
+        border-radius: var(--radius-full);
+        font-weight: 600;
+        font-size: var(--font-small);
+    }
+
+    .odt-badge-hoy {
+        background: var(--color-info-light);
+        color: var(--color-info);
+    }
+
+    .odt-badge-manana {
+        background: var(--color-warning-light);
+        color: var(--color-warning);
+    }
+
+    /* ─── RESPONSIVE: Mobile (< 768px) ────────── */
+    @media (max-width: 768px) {
+        .cuad-desktop-view {
+            display: none !important;
+        }
+
+        .cuad-mobile-view {
+            display: block !important;
+        }
+
+        .view-header h1 {
+            font-size: 1.2rem;
+        }
+
+        .filter-bar {
+            flex-direction: column;
+        }
+
+        .filter-bar .input {
+            width: 100%;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .modal-content {
+            padding: 20px;
+            border-radius: var(--radius-lg);
+        }
+    }
+
+    /* ─── Light mode fixes ────────────────────── */
+    [data-theme="light"] .col-selector-menu {
+        border-color: #d1d5db;
+    }
+
+    [data-theme="light"] .col-selector-item:hover {
+        background: rgba(0, 0, 0, 0.04);
+    }
+
+    [data-theme="light"] .cuad-card {
+        border-color: #e2e8f0;
+    }
+
+    [data-theme="light"] .cuad-card-color {
+        border-color: rgba(0, 0, 0, 0.15);
+    }
+
+    [data-theme="light"] .cuad-card-actions {
+        border-top-color: #e2e8f0;
+    }
+</style>
