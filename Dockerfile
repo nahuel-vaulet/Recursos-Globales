@@ -20,7 +20,7 @@ COPY frontend/ ./frontend/
 
 # ─── Install Composer dependencies ─────────────────────
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-RUN cd backend && composer install --no-dev --optimize-autoloader --no-interaction
+RUN cd backend && composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
 
 # ─── Copy root entry point that routes to backend/frontend ──
 COPY docker/apache-vhost.conf /etc/apache2/sites-available/000-default.conf
