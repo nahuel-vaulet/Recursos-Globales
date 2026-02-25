@@ -1,19 +1,9 @@
 FROM php:8.2-apache
 
-# ─── Install PostgreSQL + CURL + GD + Spreadsheet drivers ───
-RUN apt-get update && apt-get install -y \
-    libpq-dev \
-    libcurl4-openssl-dev \
-    libzip-dev \
-    unzip \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libonig-dev \
-    libxml2-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_pgsql pdo_mysql curl zip gd mbstring xml dom \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+# ─── Install PHP Extensions reliably using mlocati ─────────
+ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+RUN chmod +x /usr/local/bin/install-php-extensions && \
+    install-php-extensions pdo_mysql pdo_pgsql zip gd xml mbstring dom curl intl
 
 # ─── Enable Apache mod_rewrite ─────────────────────────
 RUN a2enmod rewrite
